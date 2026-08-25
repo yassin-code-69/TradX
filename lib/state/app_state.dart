@@ -26,6 +26,16 @@ class AppState extends ChangeNotifier {
   factory AppState() => _instance;
   AppState._internal();
 
+  int _currentTabIndex = 0;
+  int get currentTabIndex => _currentTabIndex;
+
+  void setTabIndex(int index) {
+    if (_currentTabIndex != index) {
+      _currentTabIndex = index;
+      notifyListeners();
+    }
+  }
+
   double _walletBalance = 2540.50;
   double get walletBalance => _walletBalance;
 
@@ -54,7 +64,7 @@ class AppState extends ChangeNotifier {
   final List<TransactionItem> _transactions = [
     const TransactionItem(
       title: 'Add Money',
-      date: '17 May 2026 | 11:20 AM',
+      date: '17 Aug 2026 | 11:20 AM',
       amount: '+ ৳ 1,000',
       isCredit: true,
       category: TxType.addMoney,
@@ -64,7 +74,7 @@ class AppState extends ChangeNotifier {
     ),
     const TransactionItem(
       title: 'Mega Draw Ticket',
-      date: '17 May 2026 | 11:25 AM',
+      date: '17 Aug 2026 | 11:25 AM',
       amount: '- ৳ 100',
       isCredit: false,
       category: TxType.tickets,
@@ -74,7 +84,7 @@ class AppState extends ChangeNotifier {
     ),
     const TransactionItem(
       title: 'Daily Draw Ticket',
-      date: '17 May 2026 | 11:30 AM',
+      date: '17 Aug 2026 | 11:30 AM',
       amount: '- ৳ 60',
       isCredit: false,
       category: TxType.tickets,
@@ -84,7 +94,7 @@ class AppState extends ChangeNotifier {
     ),
     const TransactionItem(
       title: 'Hourly Draw Ticket',
-      date: '17 May 2026 | 11:35 AM',
+      date: '17 Aug 2026 | 11:35 AM',
       amount: '- ৳ 20',
       isCredit: false,
       category: TxType.tickets,
@@ -94,7 +104,7 @@ class AppState extends ChangeNotifier {
     ),
     const TransactionItem(
       title: 'Withdraw',
-      date: '16 May 2026 | 08:05 PM',
+      date: '16 Aug 2026 | 08:05 PM',
       amount: '- ৳ 500',
       isCredit: false,
       category: TxType.withdraw,
@@ -104,7 +114,7 @@ class AppState extends ChangeNotifier {
     ),
     const TransactionItem(
       title: 'Add Money',
-      date: '16 May 2026 | 07:30 PM',
+      date: '16 Aug 2026 | 07:30 PM',
       amount: '+ ৳ 500',
       isCredit: true,
       category: TxType.addMoney,
@@ -114,7 +124,7 @@ class AppState extends ChangeNotifier {
     ),
     const TransactionItem(
       title: 'Mega Draw Ticket',
-      date: '16 May 2026 | 07:20 PM',
+      date: '16 Aug 2026 | 07:20 PM',
       amount: '- ৳ 100',
       isCredit: false,
       category: TxType.tickets,
@@ -183,13 +193,15 @@ class AppState extends ChangeNotifier {
     required String number,
     required int count,
     required int unitPrice,
+    String paymentMethod = 'nagad',
   }) {
     final double total = (unitPrice * count).toDouble();
-    if (total > _walletBalance) {
-      return false;
+    if (paymentMethod == 'wallet') {
+      if (total > _walletBalance) {
+        return false;
+      }
+      _walletBalance -= total;
     }
-
-    _walletBalance -= total;
     _usedForTickets += total;
 
     _purchasedTickets.insert(

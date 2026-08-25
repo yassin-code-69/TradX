@@ -26,7 +26,7 @@ class LatestResultsSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'LATEST RESULT',
+              'LATEST RESULTS',
               style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -43,7 +43,7 @@ class LatestResultsSection extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.cyanAccent,
+                    color: AppColors.goldAccent,
                   ),
                 ),
               ),
@@ -59,69 +59,102 @@ class LatestResultsSection extends StatelessWidget {
   }
 
   Widget _buildResultRow(BuildContext context, DrawResult result) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-      decoration: BoxDecoration(
-        color: AppColors.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.cardBorder.withValues(alpha: 0.8),
-          width: 1,
+    return GestureDetector(
+      onTap: onResultTap != null ? () => onResultTap!(result) : onSeeAllTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.cardBorder.withValues(alpha: 0.8),
+            width: 1,
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          // Small Type Icon
-          _buildSmallIcon(result.type),
+        child: Row(
+          children: [
+            // Small Type Icon
+            _buildSmallIcon(result.type),
 
-          const SizedBox(width: 8),
+            const SizedBox(width: 10),
 
-          // Title & Date
-          Expanded(
-            child: Text(
-              '${result.title}  ${result.date}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFFC7CCD9),
+            // Title & Date
+            Expanded(
+              child: Text(
+                '${result.title}  ${result.date}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFC7CCD9),
+                ),
               ),
             ),
-          ),
 
-          const SizedBox(width: 8),
+            const SizedBox(width: 6),
 
-          // Winning Digits Badges
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: result.winningNumbers.map((digit) {
-              return Container(
-                margin: const EdgeInsets.only(left: 3),
-                width: result.winningNumbers.length > 4 ? 20 : 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: AppColors.pillBg,
-                  borderRadius: BorderRadius.circular(5),
-                  border: Border.all(
-                    color: AppColors.pillBorder,
-                    width: 1,
+            // Winning Digits Badges in Circles
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: result.winningNumbers.map((digit) {
+                final isMega = result.type == DrawType.mega;
+                final size = isMega ? 22.0 : 26.0;
+                final fontSize = isMega ? 10.5 : 12.5;
+
+                Color circleBg;
+                Color circleBorder;
+
+                switch (result.type) {
+                  case DrawType.hourly:
+                    circleBg = const Color(0xFF2B1545);
+                    circleBorder = AppColors.purpleAccent;
+                    break;
+                  case DrawType.daily:
+                    circleBg = const Color(0xFF0C2B1D);
+                    circleBorder = AppColors.greenAccent;
+                    break;
+                  case DrawType.mega:
+                    circleBg = const Color(0xFF2A2010);
+                    circleBorder = AppColors.goldPrimary;
+                    break;
+                }
+
+                return Container(
+                  margin: EdgeInsets.only(left: isMega ? 3 : 4),
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    color: circleBg,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: circleBorder,
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: circleBorder.withValues(alpha: 0.25),
+                        blurRadius: 4,
+                        spreadRadius: 0.5,
+                      ),
+                    ],
                   ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  digit,
-                  style: GoogleFonts.inter(
-                    fontSize: result.winningNumbers.length > 4 ? 11 : 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                  alignment: Alignment.center,
+                  child: Text(
+                    digit,
+                    style: GoogleFonts.inter(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.0,
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -130,8 +163,8 @@ class LatestResultsSection extends StatelessWidget {
     switch (type) {
       case DrawType.hourly:
         return Container(
-          width: 22,
-          height: 22,
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
             color: AppColors.purpleBg,
             shape: BoxShape.circle,
@@ -140,13 +173,13 @@ class LatestResultsSection extends StatelessWidget {
           child: const Icon(
             Icons.access_time_rounded,
             color: AppColors.purpleLight,
-            size: 13,
+            size: 14,
           ),
         );
       case DrawType.daily:
         return Container(
-          width: 22,
-          height: 22,
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
             color: AppColors.greenBg,
             shape: BoxShape.circle,
@@ -155,13 +188,13 @@ class LatestResultsSection extends StatelessWidget {
           child: const Icon(
             Icons.confirmation_number_outlined,
             color: AppColors.greenLight,
-            size: 13,
+            size: 14,
           ),
         );
       case DrawType.mega:
         return Container(
-          width: 22,
-          height: 22,
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
             color: const Color(0xFF2A2010),
             shape: BoxShape.circle,
@@ -170,7 +203,7 @@ class LatestResultsSection extends StatelessWidget {
           child: const Icon(
             Icons.emoji_events_outlined,
             color: AppColors.goldAccent,
-            size: 13,
+            size: 14,
           ),
         );
     }

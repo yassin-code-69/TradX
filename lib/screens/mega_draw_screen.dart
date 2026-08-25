@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tradex/models/draw_model.dart';
+import 'package:tradex/screens/mega_draw_info_screen.dart';
 import 'package:tradex/screens/payment_screen.dart';
 import 'package:tradex/theme/app_colors.dart';
 import 'package:tradex/widgets/draw_icons.dart';
@@ -74,36 +75,61 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+            icon: const Icon(Icons.info_outline_rounded, color: Colors.white, size: 22),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MegaDrawInfoScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
             onPressed: () {},
           ),
         ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Hero Trophy & Heading
-              Text(
-                'MEGA DRAW',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.0,
-                  color: AppColors.goldAccent,
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Color(0xFFFFEE58),
+                    Color(0xFFFFD54F),
+                    Color(0xFFFFA000),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ).createShader(bounds),
+                child: Text(
+                  'MEGA DRAW',
+                  style: GoogleFonts.poppins(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.0,
+                    color: Colors.white,
+                  ),
                 ),
               ),
+              const SizedBox(height: 2),
               Text(
                 '1st of Every Month',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 12),
-              const MegaDrawTrophyIcon(size: 72),
+              // Golden Trophy with radiant aura
+              const Center(
+                child: MegaDrawTrophyIcon(size: 76),
+              ),
               const SizedBox(height: 16),
 
               // Next Draw Banner Card
@@ -125,7 +151,7 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       '01 Sep 2026 | 09:00 PM',
                       style: GoogleFonts.inter(
@@ -158,7 +184,7 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
                 ),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
               // Section: SELECT YOUR 7 DIGIT NUMBER
               Align(
@@ -174,9 +200,9 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // 7 Digit Display Circles / Rounded Pills
+              // 7 Digit Display Slots
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(7, (index) {
@@ -184,10 +210,10 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
                   final bool isFilled = digit.isNotEmpty;
                   return Container(
                     width: 38,
-                    height: 42,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: isFilled ? AppColors.cardBgElevated : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(9),
                       border: Border.all(
                         color: isFilled ? AppColors.goldAccent : AppColors.cardBorderHighlight,
                         width: 1.5,
@@ -214,12 +240,12 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
                 }),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Number Keypad
               _buildKeypad(),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Ticket Price and Quantity Row
               Row(
@@ -306,18 +332,37 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
 
               const SizedBox(height: 14),
 
-              // Pay and Confirm Button (Golden)
-              SizedBox(
+              // Pay and Confirm Button (Golden Gradient)
+              Container(
                 width: double.infinity,
                 height: 52,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFFFD54F),
+                      Color(0xFFF59E0B),
+                      Color(0xFFD97706),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.goldPrimary.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.goldButton,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
                     foregroundColor: Colors.black87,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 4,
                   ),
                   onPressed: () {
                     if (!isNumberComplete) {
@@ -354,20 +399,32 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
 
               const SizedBox(height: 12),
 
-              // Footer info
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'More tickets, more chances to win!',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
+              // Footer info (Clickable to open MegaDrawInfoScreen)
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MegaDrawInfoScreen()),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'More tickets, more chances to win!',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.card_giftcard, color: AppColors.purpleLight, size: 16),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.card_giftcard, color: AppColors.purpleLight, size: 16),
-                ],
+                ),
               ),
             ],
           ),
@@ -391,7 +448,7 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: ['7', '8', '0'].map((d) => _buildKey(d)).toList(),
+          children: ['7', '8', '9'].map((d) => _buildKey(d)).toList(),
         ),
         const SizedBox(height: 8),
         Row(
@@ -419,7 +476,9 @@ class _MegaDrawScreenState extends State<MegaDrawScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
+            _buildKey('0'),
+            const SizedBox(width: 8),
             Expanded(
               flex: 1,
               child: GestureDetector(

@@ -102,14 +102,14 @@ class _HourlyDrawScreenState extends State<HourlyDrawScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+            icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
             onPressed: () {},
           ),
         ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -144,19 +144,20 @@ class _HourlyDrawScreenState extends State<HourlyDrawScreen> {
                             letterSpacing: 1.0,
                           ),
                         ),
+                        const SizedBox(height: 2),
                         Row(
                           children: [
                             Text(
                               'HOUR    ',
-                              style: GoogleFonts.inter(fontSize: 8.5, color: AppColors.textMuted),
+                              style: GoogleFonts.inter(fontSize: 8.5, color: AppColors.textMuted, fontWeight: FontWeight.w600),
                             ),
                             Text(
                               'MIN    ',
-                              style: GoogleFonts.inter(fontSize: 8.5, color: AppColors.textMuted),
+                              style: GoogleFonts.inter(fontSize: 8.5, color: AppColors.textMuted, fontWeight: FontWeight.w600),
                             ),
                             Text(
                               'SEC',
-                              style: GoogleFonts.inter(fontSize: 8.5, color: AppColors.textMuted),
+                              style: GoogleFonts.inter(fontSize: 8.5, color: AppColors.textMuted, fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -182,7 +183,7 @@ class _HourlyDrawScreenState extends State<HourlyDrawScreen> {
                         ),
                       ],
                     ),
-                    const HourlyDrawClockIcon(size: 54),
+                    const HourlyDrawClockIcon(size: 56),
                   ],
                 ),
               ),
@@ -246,7 +247,7 @@ class _HourlyDrawScreenState extends State<HourlyDrawScreen> {
               // Number Keypad
               _buildKeypad(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // Ticket Price and Quantity Row
               Row(
@@ -333,18 +334,37 @@ class _HourlyDrawScreenState extends State<HourlyDrawScreen> {
 
               const SizedBox(height: 16),
 
-              // Pay and Confirm Button (Magenta/Crimson matching mockup)
-              SizedBox(
+              // Pay and Confirm Button (Crimson / Magenta Wine Gradient)
+              Container(
                 width: double.infinity,
                 height: 52,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFD81B60), // Vibrant Crimson Magenta
+                      Color(0xFFAD1457), // Deep Wine Magenta
+                      Color(0xFF880E4F), // Dark Wine
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFAD1457).withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.hourlyDrawButton,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 4,
                   ),
                   onPressed: () {
                     if (!isNumberComplete) {
@@ -437,7 +457,7 @@ class _HourlyDrawScreenState extends State<HourlyDrawScreen> {
         const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: ['7', '8', '0'].map((d) => _buildKey(d)).toList(),
+          children: ['7', '8', '9'].map((d) => _buildKey(d)).toList(),
         ),
         const SizedBox(height: 10),
         Row(
@@ -465,7 +485,9 @@ class _HourlyDrawScreenState extends State<HourlyDrawScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
+            _buildKey('0'),
+            const SizedBox(width: 8),
             Expanded(
               flex: 1,
               child: GestureDetector(
