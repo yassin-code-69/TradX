@@ -7,9 +7,7 @@ import 'package:tradex/screens/all_results_screen.dart';
 import 'package:tradex/screens/daily_draw_screen.dart';
 import 'package:tradex/screens/hourly_draw_screen.dart';
 import 'package:tradex/screens/mega_draw_screen.dart';
-import 'package:tradex/screens/profile_screen.dart';
 import 'package:tradex/screens/transaction_history_screen.dart';
-import 'package:tradex/screens/wallet_screen.dart';
 import 'package:tradex/screens/withdraw_screen.dart';
 import 'package:tradex/state/app_state.dart';
 import 'package:tradex/theme/app_colors.dart';
@@ -33,9 +31,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleDrawerNavigation(String route) {
     switch (route) {
       case 'home':
+        _appState.setTabIndex(0);
         break;
       case 'wallet':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletScreen()));
+        _appState.setTabIndex(3);
         break;
       case 'add_money':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AddMoneyScreen()));
@@ -59,10 +58,10 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(context, MaterialPageRoute(builder: (_) => const HourlyDrawScreen()));
         break;
       case 'results':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const AllResultsScreen()));
+        _appState.setTabIndex(2);
         break;
       case 'profile':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+        _appState.setTabIndex(4);
         break;
     }
   }
@@ -128,10 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     return WalletBalanceCard(
                       balance: _appState.formattedBalance,
                       onCardTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const WalletScreen()),
-                        );
+                        _appState.setTabIndex(3);
                       },
                       onAddTap: () {
                         Navigator.push(

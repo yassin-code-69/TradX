@@ -23,7 +23,7 @@ class DrawResult {
     DrawResult(
       id: 'res_1',
       title: 'Hourly Draw',
-      date: '17 May, 08:00 PM',
+      date: '09:00 PM',
       winningNumbers: ['1', '7', '3'],
       type: DrawType.hourly,
       accentColor: AppColors.purpleAccent,
@@ -31,7 +31,7 @@ class DrawResult {
     DrawResult(
       id: 'res_2',
       title: 'Daily Draw',
-      date: '17 May, 10:00 PM',
+      date: '10:00 PM',
       winningNumbers: ['5', '6', '7'],
       type: DrawType.daily,
       accentColor: AppColors.greenAccent,
@@ -39,7 +39,7 @@ class DrawResult {
     DrawResult(
       id: 'res_3',
       title: 'Mega Draw',
-      date: '01 May, 09:00 PM',
+      date: '01 Aug 09:00 PM',
       winningNumbers: ['1', '2', '3', '4', '5', '6', '7'],
       type: DrawType.mega,
       accentColor: AppColors.goldPrimary,

@@ -127,36 +127,39 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.cardBorder),
               ),
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    title: Text(
-                      'Two-Factor Authentication (2FA)',
-                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+              child: Material(
+                color: Colors.transparent,
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: Text(
+                        'Two-Factor Authentication (2FA)',
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        'Require OTP for logins and withdrawals',
+                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                      value: _twoFactor,
+                      activeThumbColor: AppColors.goldPrimary,
+                      onChanged: (val) => setState(() => _twoFactor = val),
                     ),
-                    subtitle: Text(
-                      'Require OTP for logins and withdrawals',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                    const Divider(color: AppColors.divider, height: 1),
+                    SwitchListTile(
+                      title: Text(
+                        'Biometric Unlock',
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        'Use Fingerprint / Face ID for fast login',
+                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                      value: _biometrics,
+                      activeThumbColor: AppColors.goldPrimary,
+                      onChanged: (val) => setState(() => _biometrics = val),
                     ),
-                    value: _twoFactor,
-                    activeThumbColor: AppColors.goldPrimary,
-                    onChanged: (val) => setState(() => _twoFactor = val),
-                  ),
-                  const Divider(color: AppColors.divider, height: 1),
-                  SwitchListTile(
-                    title: Text(
-                      'Biometric Unlock',
-                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
-                    ),
-                    subtitle: Text(
-                      'Use Fingerprint / Face ID for fast login',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                    value: _biometrics,
-                    activeThumbColor: AppColors.goldPrimary,
-                    onChanged: (val) => setState(() => _biometrics = val),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -166,18 +169,21 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.cardBorder),
               ),
-              child: ListTile(
-                leading: const Icon(Icons.password_rounded, color: AppColors.goldPrimary),
-                title: Text(
-                  'Change PIN / Password',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+              child: Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  leading: const Icon(Icons.password_rounded, color: AppColors.goldPrimary),
+                  title: Text(
+                    'Change PIN / Password',
+                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('PIN reset link sent to your phone')),
+                    );
+                  },
                 ),
-                trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('PIN reset link sent to your phone')),
-                  );
-                },
               ),
             ),
           ],
@@ -529,12 +535,15 @@ class HelpSupportScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.cardBorder),
       ),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.goldPrimary),
-        title: Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-        subtitle: Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
-        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-        onTap: onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          leading: Icon(icon, color: AppColors.goldPrimary),
+          title: Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+          subtitle: Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
+          trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+          onTap: onTap,
+        ),
       ),
     );
   }

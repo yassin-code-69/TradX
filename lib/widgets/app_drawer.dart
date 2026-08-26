@@ -244,34 +244,37 @@ class AppDrawer extends StatelessWidget {
     required VoidCallback onTap,
     bool selected = false,
   }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: selected ? AppColors.goldPrimary : AppColors.textSecondary,
-        size: 22,
-      ),
-      title: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color: selected ? Colors.white : AppColors.textPrimary,
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: selected ? AppColors.goldPrimary : AppColors.textSecondary,
+          size: 22,
         ),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? Colors.white : AppColors.textPrimary,
+          ),
+        ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: badgeColor ?? AppColors.textSecondary,
+                ),
+              )
+            : null,
+        dense: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        tileColor: selected ? AppColors.cardBg : Colors.transparent,
+        onTap: onTap,
       ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: badgeColor ?? AppColors.textSecondary,
-              ),
-            )
-          : null,
-      dense: true,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      tileColor: selected ? AppColors.cardBg : Colors.transparent,
-      onTap: onTap,
     );
   }
 }

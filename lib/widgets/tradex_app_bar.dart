@@ -77,7 +77,7 @@ class TradexAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    'PLAY • WIN • REPEAT',
+                    'PLAY · WIN · REPEAT',
                     style: GoogleFonts.inter(
                       fontSize: 8.5,
                       fontWeight: FontWeight.w700,
@@ -119,12 +119,12 @@ class TradexAppBar extends StatelessWidget implements PreferredSizeWidget {
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: AppColors.orangeAccent,
+                          color: AppColors.redAccent,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.orangeAccent.withValues(alpha: 0.6),
-                              blurRadius: 4,
+                              color: AppColors.redAccent.withValues(alpha: 0.8),
+                              blurRadius: 5,
                               spreadRadius: 1,
                             ),
                           ],

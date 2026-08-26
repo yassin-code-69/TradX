@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tradex/screens/add_money_screen.dart';
+import 'package:tradex/screens/transaction_history_screen.dart';
 import 'package:tradex/screens/withdraw_screen.dart';
 import 'package:tradex/state/app_state.dart';
 import 'package:tradex/theme/app_colors.dart';
@@ -20,7 +21,13 @@ class WalletScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              appState.setTabIndex(0);
+            }
+          },
         ),
         title: Text(
           'Wallet',
@@ -38,7 +45,7 @@ class WalletScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Total Balance Card (Reactive to AppState)
+              // 1. Total Balance Card (Reactive to AppState)
               ListenableBuilder(
                 listenable: appState,
                 builder: (context, _) {
@@ -47,7 +54,17 @@ class WalletScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.cardBg,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.cardBorder),
+                      border: Border.all(
+                        color: AppColors.cardBorder,
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -59,17 +76,35 @@ class WalletScreen extends StatelessWidget {
                               'Total Balance',
                               style: GoogleFonts.inter(
                                 fontSize: 13,
+                                fontWeight: FontWeight.w500,
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '৳ ${appState.formattedBalance}',
-                              style: GoogleFonts.inter(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  '৳',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  appState.formattedBalance,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.3,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -82,12 +117,12 @@ class WalletScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // Action Buttons: ADD MONEY & WITHDRAW
+              // 2. Action Buttons: [ADD MONEY] (purple filled) & [WITHDRAW] (dark outline)
               Row(
                 children: [
                   Expanded(
                     child: SizedBox(
-                      height: 46,
+                      height: 48,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.purpleButton,
@@ -117,15 +152,18 @@ class WalletScreen extends StatelessWidget {
                   const SizedBox(width: 14),
                   Expanded(
                     child: SizedBox(
-                      height: 46,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.goldButton,
-                          foregroundColor: Colors.black87,
+                      height: 48,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: AppColors.cardBgElevated,
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(
+                            color: Color(0xFF2C3550),
+                            width: 1.2,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          elevation: 2,
                         ),
                         onPressed: () {
                           Navigator.push(
@@ -139,6 +177,7 @@ class WalletScreen extends StatelessWidget {
                             fontSize: 13.5,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.5,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -149,11 +188,62 @@ class WalletScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Wallet Summary Header
+              // 3. "Transaction History" Section Header with "See All" gold link
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Transaction History',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                      child: Text(
+                        'See All',
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.goldAccent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // 4. Transaction List Items (Reactive to AppState)
+              ListenableBuilder(
+                listenable: appState,
+                builder: (context, _) {
+                  final transactions = appState.transactions;
+                  final displayList = transactions.take(5).toList();
+
+                  return Column(
+                    children: displayList.map((tx) => _buildTransactionCard(tx)).toList(),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // 5. "Wallet Summary" Section Header
               Text(
                 'Wallet Summary',
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
@@ -166,7 +256,7 @@ class WalletScreen extends StatelessWidget {
                 listenable: appState,
                 builder: (context, _) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
                       color: AppColors.cardBg,
                       borderRadius: BorderRadius.circular(14),
@@ -211,7 +301,7 @@ class WalletScreen extends StatelessWidget {
                 },
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // Promo Footer Card
               Container(
@@ -248,6 +338,8 @@ class WalletScreen extends StatelessWidget {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -283,6 +375,71 @@ class WalletScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTransactionCard(TransactionItem tx) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.cardBorder,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Shaded Square Icon
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: tx.iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(tx.icon, color: tx.iconColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+
+          // Title & Date
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tx.title,
+                  style: GoogleFonts.inter(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  tx.date,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Amount
+          Text(
+            tx.amount,
+            style: GoogleFonts.inter(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: tx.isCredit ? AppColors.greenLight : const Color(0xFFEF4444),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
