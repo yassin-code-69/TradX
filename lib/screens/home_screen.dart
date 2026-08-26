@@ -7,6 +7,8 @@ import 'package:tradex/screens/all_results_screen.dart';
 import 'package:tradex/screens/daily_draw_screen.dart';
 import 'package:tradex/screens/hourly_draw_screen.dart';
 import 'package:tradex/screens/mega_draw_screen.dart';
+import 'package:tradex/screens/notifications_screen.dart';
+import 'package:tradex/screens/send_money_screen.dart';
 import 'package:tradex/screens/transaction_history_screen.dart';
 import 'package:tradex/screens/withdraw_screen.dart';
 import 'package:tradex/state/app_state.dart';
@@ -57,6 +59,12 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'hourly_draw':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const HourlyDrawScreen()));
         break;
+      case 'send_money':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const SendMoneyScreen()));
+        break;
+      case 'notifications':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+        break;
       case 'results':
         _appState.setTabIndex(2);
         break;
@@ -97,11 +105,9 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: TradexAppBar(
         onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
         onNotificationTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Notifications: 2 new draw winners announced!'),
-              backgroundColor: AppColors.cardBgElevated,
-            ),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
           );
         },
       ),

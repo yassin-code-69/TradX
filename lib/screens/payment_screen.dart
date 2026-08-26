@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tradex/models/draw_model.dart';
+import 'package:tradex/models/ticket_model.dart';
 import 'package:tradex/state/app_state.dart';
 import 'package:tradex/theme/app_colors.dart';
 import 'package:tradex/widgets/payment_logos.dart';
@@ -349,7 +350,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     await Future.delayed(const Duration(milliseconds: 900));
 
-    final bool success = _appState.buyTicket(
+    final TicketModel? purchasedTicket = _appState.buyTicket(
       draw: widget.draw,
       number: widget.selectedNumber,
       count: widget.ticketCount,
@@ -360,7 +361,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = false);
 
-    if (success) {
+    if (purchasedTicket != null) {
       _showSuccessDialog(totalAmount);
     }
   }

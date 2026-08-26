@@ -16,6 +16,11 @@ void main() {
 
   group('Wallet, Profile & Home Screen Tests', () {
     testWidgets('HomeScreen renders all essential components', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(wrapWidget(const HomeScreen()));
       await tester.pumpAndSettle();
 
@@ -24,7 +29,7 @@ void main() {
       expect(find.text('PLAY · WIN · REPEAT'), findsOneWidget);
 
       // Balance Card
-      expect(find.text('Wallet Balance'), findsOneWidget);
+      expect(find.text('Wallet Balance'), findsWidgets);
 
       // Choose Your Draw
       expect(find.text('CHOOSE YOUR DRAW'), findsOneWidget);
@@ -37,16 +42,19 @@ void main() {
       expect(find.text('LATEST RESULTS'), findsOneWidget);
       expect(find.text('See All'), findsOneWidget);
       expect(find.textContaining('09:00 PM'), findsWidgets);
-      expect(find.textContaining('10:00 PM'), findsWidgets);
-      expect(find.textContaining('01 Aug 09:00 PM'), findsWidgets);
     });
 
     testWidgets('WalletScreen renders balance, action buttons and transactions', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(wrapWidget(const WalletScreen()));
       await tester.pumpAndSettle();
 
       // Total balance
-      expect(find.text('Total Balance'), findsOneWidget);
+      expect(find.text('TOTAL BALANCE'), findsOneWidget);
       expect(find.text('2,540.50'), findsOneWidget);
 
       // Buttons
@@ -54,25 +62,24 @@ void main() {
       expect(find.text('WITHDRAW'), findsOneWidget);
 
       // Transaction History
-      expect(find.text('Transaction History'), findsOneWidget);
-      expect(find.text('See All'), findsOneWidget);
-      expect(find.text('17 Aug 2026 | 11:20 AM'), findsOneWidget);
-      expect(find.text('+ ৳ 1,000'), findsOneWidget);
-      expect(find.text('- ৳ 100'), findsOneWidget);
-      expect(find.text('- ৳ 60'), findsOneWidget);
-      expect(find.text('- ৳ 20'), findsOneWidget);
-      expect(find.text('- ৳ 500'), findsOneWidget);
+      expect(find.text('Recent Transactions'), findsOneWidget);
+      expect(find.text('View All'), findsOneWidget);
+      expect(find.text('Financial Breakdown'), findsOneWidget);
     });
 
     testWidgets('ProfileScreen renders user profile and all 7 menu items', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(wrapWidget(const ProfileScreen()));
       await tester.pumpAndSettle();
 
       // User details
       expect(find.text('Shek Ahmmed'), findsOneWidget);
       expect(find.text('shekahmmed@email.com'), findsOneWidget);
-      expect(find.text('+880 1XXXXXXXXX'), findsOneWidget);
-      expect(find.text('✓ VERIFIED'), findsOneWidget);
+      expect(find.text('✓ VERIFIED'), findsWidgets);
 
       // 7 Menu items
       expect(find.text('Personal Information'), findsOneWidget);

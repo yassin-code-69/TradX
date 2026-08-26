@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tradex/screens/main_shell_screen.dart';
+import 'package:tradex/screens/splash_screen.dart';
 import 'package:tradex/theme/app_theme.dart';
 
 void main() {
@@ -25,7 +25,7 @@ class TradexApp extends StatelessWidget {
       title: 'TRADEX',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const MainShellScreen(),
+      home: const SplashScreen(),
     );
   }
 }

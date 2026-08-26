@@ -127,11 +127,33 @@ class AppDrawer extends StatelessWidget {
                         },
                       ),
                       _buildDrawerItem(
+                        icon: Icons.send_rounded,
+                        title: 'Send Money',
+                        subtitle: '0% Instant P2P',
+                        badgeColor: AppColors.cyanAccent,
+                        onTap: () {
+                          Navigator.pop(context);
+                          onNavigate('send_money');
+                        },
+                      ),
+                      _buildDrawerItem(
                         icon: Icons.history_rounded,
                         title: 'Transaction History',
                         onTap: () {
                           Navigator.pop(context);
                           onNavigate('history');
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.notifications_none_rounded,
+                        title: 'Notifications',
+                        subtitle: appState.unreadNotificationsCount > 0
+                            ? '${appState.unreadNotificationsCount} unread'
+                            : null,
+                        badgeColor: AppColors.goldPrimary,
+                        onTap: () {
+                          Navigator.pop(context);
+                          onNavigate('notifications');
                         },
                       ),
                       const Divider(color: AppColors.divider, height: 24),

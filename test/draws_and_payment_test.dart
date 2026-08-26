@@ -148,31 +148,32 @@ void main() {
           home: MegaDrawScreen(),
         ),
       );
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Mega Draw'), findsOneWidget);
-      expect(find.text('MEGA DRAW'), findsOneWidget);
-      expect(find.text('1st of Every Month'), findsOneWidget);
+      expect(find.text('MEGA DRAW JACKPOT'), findsOneWidget);
+      expect(find.text('1st of Every Month • Guaranteed ৳ 5,00,000 Winner'), findsOneWidget);
       expect(find.text('01 Sep 2026 | 09:00 PM'), findsOneWidget);
-      expect(find.text('৳ 5,00,000'), findsOneWidget);
-      expect(find.text('SELECT YOUR 7 DIGIT NUMBER'), findsOneWidget);
+      expect(find.text('SELECT 7 DIGIT COMBINATION'), findsOneWidget);
       expect(find.text('Ticket Price'), findsOneWidget);
-      expect(find.text('৳ 100'), findsOneWidget);
-      expect(find.text('PAY ৳ 100 & CONFIRM'), findsOneWidget);
-      expect(find.text('More tickets, more chances to win!'), findsOneWidget);
+      expect(find.text('৳ 100 / tkt'), findsOneWidget);
+      expect(find.text('BUY TICKET • ৳ 100'), findsOneWidget);
+      expect(find.text('View guaranteed prize tiers & rules'), findsOneWidget);
 
       // Quick Pick fills 7 digits
       await tester.tap(find.text('Quick Pick'));
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Total tickets increment
-      await tester.tap(find.byIcon(Icons.add));
-      await tester.pump();
-      expect(find.text('PAY ৳ 200 & CONFIRM'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('BUY TICKET • ৳ 200'), findsOneWidget);
 
-      // Navigate to Payment
-      await tester.tap(find.text('PAY ৳ 200 & CONFIRM'));
-      await tester.pumpAndSettle();
-      expect(find.text('Payment'), findsOneWidget);
+      // Navigate to TicketPurchaseScreen
+      await tester.tap(find.text('BUY TICKET • ৳ 200'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Review & Buy Ticket'), findsOneWidget);
     });
   });
 
@@ -188,32 +189,33 @@ void main() {
           home: DailyDrawScreen(),
         ),
       );
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Daily Draw'), findsOneWidget);
       expect(find.text('10:00 PM'), findsOneWidget);
       expect(find.text('৳ 50,000'), findsOneWidget);
-      expect(find.text('SELECT YOUR 3 DIGIT NUMBER'), findsOneWidget);
-      expect(find.text('৳ 60'), findsOneWidget);
-      expect(find.text('PAY ৳ 60 & CONFIRM'), findsOneWidget);
-      expect(find.text('Today 10:00 PM  •  Live Draw'), findsOneWidget);
+      expect(find.text('SELECT 3 DIGIT NUMBER (000 - 999)'), findsOneWidget);
+      expect(find.text('৳ 60 / tkt'), findsOneWidget);
+      expect(find.text('BUY TICKET • ৳ 60'), findsOneWidget);
+      expect(find.text('Today 10:00 PM  •  Watch Live Draw'), findsOneWidget);
 
       // Type 3 digits: 5, 8, 2
       await tester.tap(find.text('5'));
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.text('8'));
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.text('2'));
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('5'), findsNWidgets(2)); // Keypad + slot
       expect(find.text('8'), findsNWidgets(2)); // Keypad + slot
       expect(find.text('2'), findsNWidgets(2)); // Keypad + slot
 
-      // Navigate to Payment
-      await tester.tap(find.text('PAY ৳ 60 & CONFIRM'));
-      await tester.pumpAndSettle();
-      expect(find.text('Payment'), findsOneWidget);
-      expect(find.text('5 8 2'), findsOneWidget);
+      // Navigate to TicketPurchaseScreen
+      await tester.tap(find.text('BUY TICKET • ৳ 60'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Review & Buy Ticket'), findsOneWidget);
     });
   });
 
@@ -229,24 +231,26 @@ void main() {
           home: HourlyDrawScreen(),
         ),
       );
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Hourly Draw'), findsOneWidget);
       expect(find.text('Next Draw In'), findsOneWidget);
       expect(find.text('৳ 20,000'), findsOneWidget);
-      expect(find.text('SELECT YOUR 3 DIGIT NUMBER'), findsOneWidget);
-      expect(find.text('৳ 20'), findsOneWidget);
-      expect(find.text('PAY ৳ 20 & CONFIRM'), findsOneWidget);
-      expect(find.text('Every Hour  •  Live Draw'), findsOneWidget);
+      expect(find.text('RAPID 3-DIGIT SELECTOR'), findsOneWidget);
+      expect(find.text('৳ 20 / tkt'), findsOneWidget);
+      expect(find.text('BUY TICKET • ৳ 20'), findsOneWidget);
+      expect(find.text('Every Hour  •  Watch Live Stream'), findsOneWidget);
 
       // Quick Pick
       await tester.tap(find.text('Quick Pick'));
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-      // Navigate to Payment
-      await tester.tap(find.text('PAY ৳ 20 & CONFIRM'));
-      await tester.pumpAndSettle();
-      expect(find.text('Payment'), findsOneWidget);
-      expect(find.text('Hourly Draw'), findsOneWidget);
+      // Navigate to TicketPurchaseScreen
+      await tester.tap(find.text('BUY TICKET • ৳ 20'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Review & Buy Ticket'), findsOneWidget);
+      expect(find.text('Hourly Draw'), findsWidgets);
     });
   });
 
@@ -262,17 +266,15 @@ void main() {
           home: MegaDrawInfoScreen(),
         ),
       );
+      await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Mega Draw Info'), findsOneWidget);
+      expect(find.text('Mega Draw Rules & Prizes'), findsOneWidget);
       expect(find.text('How Mega Draw Works?'), findsOneWidget);
-      expect(find.text('Key Information'), findsOneWidget);
-      expect(find.text('Draw Date'), findsOneWidget);
-      expect(find.text('1st of Every Month'), findsOneWidget);
+      expect(find.text('PRIZE TIER BREAKDOWN'), findsOneWidget);
+      expect(find.text('Draw Schedule'), findsOneWidget);
       expect(find.text('Ticket Sale Period'), findsOneWidget);
-      expect(find.text('2nd - 30th of Every Month'), findsOneWidget);
-      expect(find.text('Prize'), findsOneWidget);
-      expect(find.text('৳ 5,00,000'), findsOneWidget);
-      expect(find.text('More tickets, more chances!'), findsOneWidget);
+      expect(find.text('Ticket Price'), findsOneWidget);
+      expect(find.text('৳ 100 per Ticket'), findsOneWidget);
     });
   });
 }

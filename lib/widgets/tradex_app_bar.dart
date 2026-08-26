@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tradex/screens/notifications_screen.dart';
 import 'package:tradex/theme/app_colors.dart';
 import 'package:tradex/widgets/custom_crown.dart';
 
@@ -102,12 +103,9 @@ class TradexAppBar extends StatelessWidget implements PreferredSizeWidget {
                     constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                     onPressed: onNotificationTap ??
                         () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('No new notifications'),
-                              duration: Duration(seconds: 1),
-                              backgroundColor: AppColors.cardBgElevated,
-                            ),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
                           );
                         },
                   ),
