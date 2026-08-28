@@ -1,0 +1,238 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand Luxury Gold / Warm Amber Accents */
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+  --color-gold-400: #fbbf24;
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-700: #b45309;
+  --color-gold-800: #92400e;
+  --color-gold-900: #78350f;
+
+  /* Default / Light Mode semantic tokens */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --surface-ground: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-text: #0f172a;
+  --surface-border: #e2e8f0;
+  --surface-muted: #64748b;
+  --surface-hover: #f1f5f9;
+
+  /* Mantine CSS variable bindings for light mode */
+  --mantine-color-body: #f8fafc;
+  --mantine-color-text: #0f172a;
+  --mantine-color-dimmed: #64748b;
+  --mantine-color-default: #ffffff;
+  --mantine-color-default-hover: #f1f5f9;
+  --mantine-color-default-color: #0f172a;
+  --mantine-color-default-border: #e2e8f0;
+  --mantine-color-placeholder: #94a3b8;
+
+  /* Light mode dark-palette remapping for seamless backward compatibility */
+  --mantine-color-dark-0: #0f172a;
+  --mantine-color-dark-1: #334155;
+  --mantine-color-dark-2: #475569;
+  --mantine-color-dark-3: #64748b;
+  --mantine-color-dark-4: #94a3b8;
+  --mantine-color-dark-5: #cbd5e1;
+  --mantine-color-dark-6: #e2e8f0;
+  --mantine-color-dark-7: #f1f5f9;
+  --mantine-color-dark-8: #ffffff;
+  --mantine-color-dark-9: #f8fafc;
+
+  /* Hallmark Frosted Glass Tokens - Light */
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(226, 232, 240, 0.85);
+  --glass-hover-border: rgba(217, 119, 6, 0.35);
+
+  /* Scrollbar - Light */
+  --scrollbar-track: rgba(241, 245, 249, 0.6);
+  --scrollbar-thumb: rgba(203, 213, 225, 0.8);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.9);
+
+  /* Table Tokens - Light */
+  --table-border-color: #e2e8f0;
+  --table-hover-color: #f1f5f9;
+  --table-striped-color: rgba(248, 250, 252, 0.75);
+}
+
+[data-mantine-color-scheme="light"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --surface-ground: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-text: #0f172a;
+  --surface-border: #e2e8f0;
+  --surface-muted: #64748b;
+  --surface-hover: #f1f5f9;
+
+  /* Mantine CSS variable bindings for light mode */
+  --mantine-color-body: #f8fafc;
+  --mantine-color-text: #0f172a;
+  --mantine-color-dimmed: #64748b;
+  --mantine-color-default: #ffffff;
+  --mantine-color-default-hover: #f1f5f9;
+  --mantine-color-default-color: #0f172a;
+  --mantine-color-default-border: #e2e8f0;
+  --mantine-color-placeholder: #94a3b8;
+
+  /* Light mode dark-palette remapping */
+  --mantine-color-dark-0: #0f172a;
+  --mantine-color-dark-1: #334155;
+  --mantine-color-dark-2: #475569;
+  --mantine-color-dark-3: #64748b;
+  --mantine-color-dark-4: #94a3b8;
+  --mantine-color-dark-5: #cbd5e1;
+  --mantine-color-dark-6: #e2e8f0;
+  --mantine-color-dark-7: #f1f5f9;
+  --mantine-color-dark-8: #ffffff;
+  --mantine-color-dark-9: #f8fafc;
+
+  /* Hallmark Frosted Glass Tokens - Light */
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(226, 232, 240, 0.85);
+  --glass-hover-border: rgba(217, 119, 6, 0.35);
+
+  /* Scrollbar - Light */
+  --scrollbar-track: rgba(241, 245, 249, 0.6);
+  --scrollbar-thumb: rgba(203, 213, 225, 0.8);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.9);
+
+  /* Table Tokens - Light */
+  --table-border-color: #e2e8f0;
+  --table-hover-color: #f1f5f9;
+  --table-striped-color: rgba(248, 250, 252, 0.75);
+}
+
+[data-mantine-color-scheme="dark"] {
+  --background: #0a0f1d;
+  --foreground: #f8fafc;
+
+  --surface-ground: #0a0f1d;
+  --surface-card: #0f172a;
+  --surface-text: #f8fafc;
+  --surface-border: #1e293b;
+  --surface-muted: #94a3b8;
+  --surface-hover: #1e293b;
+
+  /* Mantine CSS variable bindings for dark mode */
+  --mantine-color-body: #0a0f1d;
+  --mantine-color-text: #f8fafc;
+  --mantine-color-dimmed: #94a3b8;
+  --mantine-color-default: #0f172a;
+  --mantine-color-default-hover: #1e293b;
+  --mantine-color-default-color: #f8fafc;
+  --mantine-color-default-border: #1e293b;
+  --mantine-color-placeholder: #64748b;
+
+  /* Dark mode palette mappings */
+  --mantine-color-dark-0: #f8fafc;
+  --mantine-color-dark-1: #e2e8f0;
+  --mantine-color-dark-2: #cbd5e1;
+  --mantine-color-dark-3: #94a3b8;
+  --mantine-color-dark-4: #334155;
+  --mantine-color-dark-5: #1e293b;
+  --mantine-color-dark-6: #141e33;
+  --mantine-color-dark-7: #0f172a;
+  --mantine-color-dark-8: #0a0f1d;
+  --mantine-color-dark-9: #060913;
+
+  /* Hallmark Frosted Glass Tokens - Dark */
+  --glass-bg: rgba(15, 23, 42, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover-border: rgba(245, 158, 11, 0.3);
+
+  /* Scrollbar - Dark */
+  --scrollbar-track: rgba(10, 15, 29, 0.6);
+  --scrollbar-thumb: rgba(30, 41, 59, 0.8);
+  --scrollbar-thumb-hover: rgba(51, 65, 85, 0.9);
+
+  /* Table Tokens - Dark */
+  --table-border-color: #1e293b;
+  --table-hover-color: rgba(30, 41, 59, 0.6);
+  --table-striped-color: rgba(15, 23, 42, 0.5);
+}
+
+body {
+  background-color: var(--surface-ground, var(--mantine-color-body));
+  color: var(--surface-text, var(--mantine-color-text));
+  font-family:
+    var(--font-geist-sans), -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+/* Smooth mode switching transitions */
+header,
+nav,
+aside,
+main,
+.mantine-AppShell-header,
+.mantine-AppShell-navbar,
+.mantine-AppShell-main,
+.mantine-Card-root,
+.mantine-Paper-root,
+.mantine-Modal-content,
+.mantine-Modal-header,
+.mantine-Table-table,
+.mantine-Table-tr,
+.mantine-Table-th,
+.mantine-Table-td,
+.mantine-NavLink-root,
+.mantine-Button-root,
+.mantine-ActionIcon-root,
+.mantine-TextInput-input,
+.mantine-Select-input,
+.mantine-Menu-dropdown {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+/* Custom fintech scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Hallmark Glassmorphism */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  border-color: var(--glass-hover-border);
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
