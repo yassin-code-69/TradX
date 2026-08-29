@@ -11,53 +11,55 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import { IconSearch } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import { formatDateTime, getStatusColor } from "@/lib/formatters";
 import { useAdminStore } from "@/lib/store";
+import type { LedgerTransactionItem } from "@/types";
 
 const PAGE_SIZE = 25;
 
 export function LedgerTab() {
-  const { ledgerTransactions } = useAdminStore();
+  const ledgerTransactions = useAdminStore((s) => s.ledgerTransactions);
 
-  // Search and filter states
+  // Search and filter states with deferred value
   const [ledgerSearch, setLedgerSearch] = useState("");
+  const deferredSearch = useDeferredValue(ledgerSearch);
+  const [debouncedSearch] = useDebouncedValue(deferredSearch, 200);
   const [ledgerTypeFilter, setLedgerTypeFilter] = useState<string>("ALL");
   const [page, setPage] = useState(1);
 
-  // Filtered Ledger
+  // Filtered Ledger with debounced query
   const filteredLedger = useMemo(() => {
+    const q = debouncedSearch.toLowerCase().trim();
     return ledgerTransactions.filter((tx) => {
-      const matchesSearch =
-        tx.username.toLowerCase().includes(ledgerSearch.toLowerCase()) ||
-        tx.id.toLowerCase().includes(ledgerSearch.toLowerCase()) ||
-        tx.referenceId.toLowerCase().includes(ledgerSearch.toLowerCase());
+      if (q) {
+        const matchesSearch =
+          tx.username.toLowerCase().includes(q) ||
+          tx.userFullName.toLowerCase().includes(q) ||
+          tx.id.toLowerCase().includes(q) ||
+          tx.note?.toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+      }
 
-      const matchesType =
-        ledgerTypeFilter === "ALL" || tx.transactionType === ledgerTypeFilter;
+      if (ledgerTypeFilter !== "ALL" && tx.transactionType !== ledgerTypeFilter)
+        return false;
 
-      return matchesSearch && matchesType;
+      return true;
     });
-  }, [ledgerTransactions, ledgerSearch, ledgerTypeFilter]);
-
-  // Reset page when filters change
-  useEffect(() => {
-    if (ledgerSearch || ledgerTypeFilter) {
-      setPage(1);
-    } else {
-      setPage(1);
-    }
-  }, [ledgerSearch, ledgerTypeFilter]);
+  }, [ledgerTransactions, debouncedSearch, ledgerTypeFilter]);
 
   const totalPages = Math.ceil(filteredLedger.length / PAGE_SIZE) || 1;
+  const currentPage = Math.min(page, totalPages);
+
   const paginatedLedger = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
     return filteredLedger.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [filteredLedger, page]);
+  }, [filteredLedger, currentPage]);
 
   return (
-    <Card p="md" radius="md" withBorder bg="dark.8">
+    <Card p="md" radius="lg" withBorder>
       <Stack gap="md">
         <Group justify="space-between" wrap="wrap">
           <TextInput
@@ -113,68 +115,7 @@ export function LedgerTab() {
                 </Table.Tr>
               ) : (
                 paginatedLedger.map((tx) => (
-                  <Table.Tr key={tx.id}>
-                    <Table.Td>
-                      <Text size="xs" ff="monospace" fw={600} c="dimmed">
-                        {tx.id}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge
-                        color={getTransactionTypeColor(tx.transactionType)}
-                        size="sm"
-                      >
-                        {tx.transactionType}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>
-                        {tx.userFullName}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        @{tx.username}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge
-                        color={tx.direction === "CREDIT" ? "teal" : "red"}
-                        size="xs"
-                        variant="light"
-                      >
-                        {tx.direction}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="xs" ff="monospace" c="dimmed">
-                        {tx.amountMinor.toLocaleString()} poisha
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text
-                        size="sm"
-                        fw={700}
-                        c={tx.direction === "CREDIT" ? "emerald.4" : "red.4"}
-                      >
-                        {tx.direction === "CREDIT" ? "+" : "-"}{" "}
-                        {tx.formattedAmount}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="xs" ff="monospace" c="dimmed">
-                        {tx.referenceType}: {tx.referenceId}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge color={getStatusColor(tx.status)} size="xs">
-                        {tx.status}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="xs" c="dimmed">
-                        {formatDateTime(tx.createdAt)}
-                      </Text>
-                    </Table.Td>
-                  </Table.Tr>
+                  <LedgerTableRow key={tx.id} transaction={tx} />
                 ))
               )}
             </Table.Tbody>
@@ -184,7 +125,7 @@ export function LedgerTab() {
         {/* Pagination Controls */}
         {filteredLedger.length > 0 && (
           <Group justify="space-between" align="center" mt="xs" wrap="wrap">
-            <Text size="xs" c="dimmed">
+            <Text size="xs" c="dimmed" fw={500}>
               Showing {(page - 1) * PAGE_SIZE + 1} to{" "}
               {Math.min(page * PAGE_SIZE, filteredLedger.length)} of{" "}
               {filteredLedger.length} entries
@@ -205,6 +146,82 @@ export function LedgerTab() {
     </Card>
   );
 }
+
+// ==================== MEMOIZED LEDGER TABLE ROW ====================
+
+interface LedgerTableRowProps {
+  transaction: LedgerTransactionItem;
+}
+
+const LedgerTableRow = React.memo(function LedgerTableRow({
+  transaction: tx,
+}: LedgerTableRowProps) {
+  return (
+    <Table.Tr key={tx.id}>
+      <Table.Td>
+        <Text size="xs" ff="monospace" fw={600} c="dimmed">
+          {tx.id}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge
+          color={getTransactionTypeColor(tx.transactionType)}
+          size="sm"
+          variant="light"
+        >
+          {tx.transactionType}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" fw={700}>
+          {tx.userFullName}
+        </Text>
+        <Text size="xs" c="dimmed">
+          @{tx.username}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge
+          color={tx.direction === "CREDIT" ? "teal" : "red"}
+          size="xs"
+          variant="filled"
+        >
+          {tx.direction}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs" ff="monospace" c="dimmed" className="font-tabular">
+          {tx.amountMinor.toLocaleString()} poisha
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text
+          size="sm"
+          fw={800}
+          className="font-tabular"
+          c={tx.direction === "CREDIT" ? "emerald.4" : "red.4"}
+        >
+          {tx.direction === "CREDIT" ? "+" : "-"} {tx.formattedAmount}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs" ff="monospace" c="dimmed">
+          {tx.referenceType}: {tx.referenceId}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge color={getStatusColor(tx.status)} size="xs" variant="filled">
+          {tx.status}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs" c="dimmed" className="font-tabular">
+          {formatDateTime(tx.createdAt)}
+        </Text>
+      </Table.Td>
+    </Table.Tr>
+  );
+});
 
 function getTransactionTypeColor(type: string): string {
   switch (type) {

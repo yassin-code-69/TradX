@@ -41,7 +41,7 @@ export function RejectDepositModal({
   deposit,
 }: RejectDepositModalProps) {
   const rejectDepositMutation = useRejectDeposit();
-  const { rejectDeposit } = useAdminStore();
+  const rejectDeposit = useAdminStore((s) => s.rejectDeposit);
   const [selectedReason, setSelectedReason] = useState<string | null>(
     REJECT_REASONS[0],
   );
@@ -93,8 +93,8 @@ export function RejectDepositModal({
       onClose={onClose}
       title={
         <Group gap="xs">
-          <IconX size={20} color="#fa5252" />
-          <Text fw={700} size="md">
+          <IconX size={20} color="#EF4444" />
+          <Text fw={800} size="md">
             Reject Deposit Request
           </Text>
         </Group>
@@ -113,26 +113,26 @@ export function RejectDepositModal({
           <strong>#{deposit.id}</strong>. No wallet balance will be credited.
         </Alert>
 
-        <Paper p="md" radius="md" withBorder bg="dark.8">
+        <Paper p="md" radius="md" withBorder bg="var(--mantine-color-default)">
           <Stack gap="xs">
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 User:
               </Text>
-              <Text size="sm" fw={600}>
+              <Text size="sm" fw={700}>
                 {deposit.userFullName} (@{deposit.username})
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Requested Amount:
               </Text>
-              <Text size="sm" fw={700}>
+              <Text size="sm" fw={800} className="font-tabular">
                 {deposit.formattedAmount}
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Provider / TrxID:
               </Text>
               <Text size="sm" ff="monospace">

@@ -2,6 +2,7 @@
 
 import {
   Alert,
+  Badge,
   Box,
   Button,
   Center,
@@ -20,10 +21,12 @@ import {
 import {
   IconAlertCircle,
   IconArrowRight,
+  IconCopy,
   IconCrown,
   IconLock,
   IconMail,
   IconShieldCheck,
+  IconSparkles,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
@@ -41,6 +44,14 @@ export default function LoginPage() {
 
   const { login } = useAuth();
   const router = useRouter();
+
+  const handleQuickFill = () => {
+    setEmail("admin@xoxoshop.com");
+    setPassword("Admin@123456");
+    setEmailError("");
+    setPasswordError("");
+    setAuthError(null);
+  };
 
   const validate = (): boolean => {
     let isValid = true;
@@ -103,76 +114,132 @@ export default function LoginPage() {
     <Box
       style={{
         minHeight: "100vh",
-        backgroundColor: "#0A0F1D",
+        backgroundColor: "#070B14",
         backgroundImage:
-          "radial-gradient(ellipse 80% 60% at 50% -20%, rgba(217, 119, 6, 0.12), transparent 70%)",
+          "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245, 158, 11, 0.22), transparent 75%), radial-gradient(ellipse 50% 40% at 90% 90%, rgba(16, 185, 129, 0.12), transparent 70%), linear-gradient(180deg, #070B14 0%, #0F172A 100%)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "24px 16px",
+        padding: "32px 16px",
       }}
     >
-      <Container size={440} w="100%">
+      <Container size={460} w="100%">
+        {/* Brand Header */}
         <Stack align="center" gap="xs" mb="xl">
-          {/* TRADEX Luxury Brand Logo */}
-          <ThemeIcon
-            size={56}
-            radius="xl"
-            variant="gradient"
-            gradient={{ from: "#D97706", to: "#F59E0B", deg: 135 }}
-            style={{
-              boxShadow: "0 8px 24px rgba(217, 119, 6, 0.35)",
-            }}
-          >
-            <IconCrown size={32} stroke={1.75} color="#0A0F1D" />
-          </ThemeIcon>
+          <Box style={{ position: "relative" }}>
+            <ThemeIcon
+              size={68}
+              radius="xl"
+              variant="gradient"
+              gradient={{ from: "#F59E0B", to: "#D97706", deg: 135 }}
+              style={{
+                boxShadow: "0 12px 36px rgba(245, 158, 11, 0.45)",
+                border: "2px solid rgba(254, 243, 199, 0.3)",
+              }}
+            >
+              <IconCrown size={38} stroke={2.2} color="#070B14" />
+            </ThemeIcon>
+          </Box>
 
           <Title
             order={1}
-            size="h2"
-            fw={800}
+            size="26px"
+            fw={900}
             style={{
-              letterSpacing: "1px",
-              background: "linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              letterSpacing: "1.8px",
+              color: "#FFFFFF",
+              textShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
             }}
           >
             TRADEX ADMIN
           </Title>
 
-          <Text size="xs" c="dimmed" fw={500} ta="center">
+          <Text
+            size="xs"
+            fw={600}
+            ta="center"
+            style={{
+              letterSpacing: "0.6px",
+              color: "#CBD5E1",
+            }}
+          >
             Operational Command Center • Sign in to access system
           </Text>
         </Stack>
 
+        {/* Login Card */}
         <Paper
           withBorder
           p="xl"
           radius="lg"
           style={{
-            backgroundColor: "#0F172A",
-            borderColor: "#1E293B",
+            backgroundColor: "rgba(15, 23, 42, 0.94)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            borderColor: "rgba(255, 255, 255, 0.14)",
             boxShadow:
-              "0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)",
+              "0 30px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08)",
           }}
         >
+          {/* Quick Fill Helper for Developers */}
+          <Paper
+            p="xs"
+            radius="md"
+            mb="md"
+            style={{
+              backgroundColor: "rgba(245, 158, 11, 0.1)",
+              border: "1px solid rgba(245, 158, 11, 0.3)",
+            }}
+          >
+            <Group justify="space-between" wrap="nowrap">
+              <Group gap={8} wrap="nowrap">
+                <IconSparkles size={16} color="#F59E0B" />
+                <div>
+                  <Text size="xs" fw={700} c="#FEF3C7">
+                    Developer Admin Credentials
+                  </Text>
+                  <Text size="11px" c="#CBD5E1">
+                    admin@xoxoshop.com • Admin@123456
+                  </Text>
+                </div>
+              </Group>
+              <Button
+                size="compact-xs"
+                variant="light"
+                color="yellow"
+                onClick={handleQuickFill}
+                leftSection={<IconCopy size={12} />}
+                style={{
+                  fontWeight: 700,
+                  fontSize: "11px",
+                  borderColor: "rgba(245, 158, 11, 0.4)",
+                }}
+              >
+                Auto Fill
+              </Button>
+            </Group>
+          </Paper>
+
           <form onSubmit={handleSubmit}>
             <Stack gap="md">
               {authError && (
                 <Alert
-                  icon={<IconAlertCircle size={16} />}
+                  icon={<IconAlertCircle size={18} />}
                   color="red"
-                  variant="light"
+                  variant="filled"
                   radius="md"
                   styles={{
                     root: {
-                      backgroundColor: "rgba(239, 68, 68, 0.1)",
-                      borderColor: "rgba(239, 68, 68, 0.3)",
+                      backgroundColor: "rgba(220, 38, 38, 0.9)",
+                      color: "#FFFFFF",
+                    },
+                    message: {
+                      color: "#FFFFFF",
+                      fontWeight: 600,
                     },
                   }}
                 >
-                  <Text size="xs" fw={500}>
+                  <Text size="xs" fw={600} c="#FFFFFF">
                     {authError}
                   </Text>
                 </Alert>
@@ -180,38 +247,75 @@ export default function LoginPage() {
 
               <TextInput
                 label="Admin Email"
-                placeholder="admin@tradex.com"
+                placeholder="admin@xoxoshop.com"
                 value={email}
                 onChange={(e) => setEmail(e.currentTarget.value)}
                 error={emailError}
                 required
-                size="sm"
-                leftSection={<IconMail size={16} stroke={1.5} />}
+                size="md"
+                leftSection={
+                  <IconMail size={18} stroke={1.8} color="#F59E0B" />
+                }
                 autoComplete="email"
                 disabled={isSubmitting}
                 styles={{
+                  label: {
+                    color: "#F1F5F9",
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    marginBottom: "6px",
+                  },
                   input: {
-                    backgroundColor: "#141E33",
-                    borderColor: "#1E293B",
+                    backgroundColor: "rgba(7, 11, 20, 0.9)",
+                    borderColor: "rgba(255, 255, 255, 0.18)",
+                    color: "#FFFFFF",
+                    fontSize: "14px",
+                    height: "44px",
+                  },
+                  error: {
+                    color: "#FCA5A5",
+                    fontSize: "12px",
+                    marginTop: "4px",
+                    fontWeight: 500,
                   },
                 }}
               />
 
               <PasswordInput
                 label="Password"
-                placeholder="••••••••••••"
+                placeholder="Enter admin password"
                 value={password}
                 onChange={(e) => setPassword(e.currentTarget.value)}
                 error={passwordError}
                 required
-                size="sm"
-                leftSection={<IconLock size={16} stroke={1.5} />}
+                size="md"
+                leftSection={
+                  <IconLock size={18} stroke={1.8} color="#F59E0B" />
+                }
                 autoComplete="current-password"
                 disabled={isSubmitting}
                 styles={{
+                  label: {
+                    color: "#F1F5F9",
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    marginBottom: "6px",
+                  },
                   input: {
-                    backgroundColor: "#141E33",
-                    borderColor: "#1E293B",
+                    backgroundColor: "rgba(7, 11, 20, 0.9)",
+                    borderColor: "rgba(255, 255, 255, 0.18)",
+                    color: "#FFFFFF",
+                    fontSize: "14px",
+                    height: "44px",
+                  },
+                  innerInput: {
+                    color: "#FFFFFF",
+                  },
+                  error: {
+                    color: "#FCA5A5",
+                    fontSize: "12px",
+                    marginTop: "4px",
+                    fontWeight: 500,
                   },
                 }}
               />
@@ -222,11 +326,12 @@ export default function LoginPage() {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.currentTarget.checked)}
                   size="xs"
-                  color="tradexGold"
+                  color="yellow"
                   styles={{
                     label: {
-                      fontSize: "12px",
-                      color: "var(--mantine-color-dimmed)",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#CBD5E1",
                     },
                   }}
                 />
@@ -238,13 +343,17 @@ export default function LoginPage() {
                 size="md"
                 mt="xs"
                 loading={isSubmitting}
-                rightSection={<IconArrowRight size={16} />}
+                rightSection={<IconArrowRight size={18} />}
                 variant="gradient"
-                gradient={{ from: "#D97706", to: "#F59E0B", deg: 90 }}
+                gradient={{ from: "#F59E0B", to: "#D97706", deg: 90 }}
+                className="btn-shimmer"
                 style={{
-                  color: "#0A0F1D",
-                  fontWeight: 700,
-                  boxShadow: "0 4px 14px rgba(217, 119, 6, 0.3)",
+                  height: "46px",
+                  color: "#070B14",
+                  fontWeight: 800,
+                  fontSize: "15px",
+                  boxShadow: "0 8px 24px rgba(245, 158, 11, 0.4)",
+                  letterSpacing: "0.5px",
                 }}
               >
                 Authenticate & Enter
@@ -252,22 +361,19 @@ export default function LoginPage() {
             </Stack>
           </form>
 
-          <Divider my="lg" color="#1E293B" />
+          <Divider my="lg" color="rgba(255, 255, 255, 0.12)" />
 
           <Center>
-            <Group gap={6}>
-              <IconShieldCheck
-                size={14}
-                style={{ color: "var(--mantine-color-tradexGold-5)" }}
-              />
-              <Text size="11px" c="dimmed" fw={500}>
+            <Group gap={8}>
+              <IconShieldCheck size={16} style={{ color: "#F59E0B" }} />
+              <Text size="12px" c="#94A3B8" fw={600}>
                 Role-gated administrative session • 256-bit encrypted
               </Text>
             </Group>
           </Center>
         </Paper>
 
-        <Text size="11px" c="dimmed" ta="center" mt="lg">
+        <Text size="12px" c="#64748B" ta="center" mt="lg" fw={500}>
           TRADEX System Administration • All activities are audited and logged
         </Text>
       </Container>

@@ -12,9 +12,9 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('*'),
 
   // Supabase
-  SUPABASE_URL: z.string().default('http://127.0.0.1:54321'),
-  SUPABASE_ANON_KEY: z.string().default('eyJhYmMiOiJkZWZhdWx0LWFub24ta2V5In0='),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().default('eyJhYmMiOiJkZWZhdWx0LXNlcnZpY2Utcm9sZS1rZXkifQ='),
+  SUPABASE_URL: z.string().default('https://mqrtqldebapvllidkcgs.supabase.co'),
+  SUPABASE_ANON_KEY: z.string().default('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xcnRxbGRlYmFwdmxsaWRrY2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTM0MzIsImV4cCI6MjEwMzE2OTQzMn0.IbAeuC_rdcAjgdL5-0WlfuBEPKzK6bRmP4peh9JMp8A'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().default('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xcnRxbGRlYmFwdmxsaWRrY2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTM0MzIsImV4cCI6MjEwMzE2OTQzMn0.IbAeuC_rdcAjgdL5-0WlfuBEPKzK6bRmP4peh9JMp8A'),
   SUPABASE_JWT_SECRET: z.string().default('tradex-super-secret-jwt-key-for-development-change-in-prod'),
 
   // PostgreSQL Database

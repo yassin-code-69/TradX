@@ -11,18 +11,18 @@ export const tradexNavy: MantineColorsTuple = [
   "#334155", // 6 - slate 700
   "#1E293B", // 7 - slate 800
   "#0F172A", // 8 - slate 900
-  "#0A0F1D", // 9 - midnight navy
+  "#070B14", // 9 - midnight navy
 ];
 
 // Luxury Gold / Warm Amber accent palette
 export const tradexGold: MantineColorsTuple = [
-  "#FFFBEB", // 0
+  "#FFFDF5", // 0
   "#FEF3C7", // 1
   "#FDE68A", // 2
   "#FCD34D", // 3
   "#FBBF24", // 4
-  "#F59E0B", // 5 - amber 500 (--color-gold-500)
-  "#D97706", // 6 - luxury gold / amber 600 (--color-gold-600)
+  "#F59E0B", // 5 - amber 500
+  "#D97706", // 6 - luxury gold / amber 600
   "#B45309", // 7 - deep gold / amber 700
   "#92400E", // 8
   "#78350F", // 9
@@ -36,10 +36,10 @@ export const tradexDark: MantineColorsTuple = [
   "#94A3B8", // 3 - muted text / placeholders
   "#334155", // 4 - subtle borders / highlights
   "#1E293B", // 5 - card & element borders
-  "#141E33", // 6 - elevated backgrounds / hover
-  "#0F172A", // 7 - card / modal surface
-  "#0A0F1D", // 8 - page background (deep midnight navy)
-  "#060913", // 9 - deepest black navy
+  "#17233D", // 6 - elevated backgrounds / hover
+  "#0D1424", // 7 - card / modal surface
+  "#070B14", // 8 - page background (deep midnight navy)
+  "#04060C", // 9 - deepest black navy
 ];
 
 // Success Emerald palette
@@ -71,10 +71,10 @@ export const tradexCrimson: MantineColorsTuple = [
 ];
 
 export const theme = createTheme({
-  primaryColor: "tradexNavy",
-  primaryShade: { light: 8, dark: 4 },
+  primaryColor: "tradexGold",
+  primaryShade: { light: 6, dark: 5 },
   white: "#FFFFFF",
-  black: "#0F172A",
+  black: "#070B14",
   colors: {
     tradexNavy,
     tradexGold,
@@ -83,7 +83,7 @@ export const theme = createTheme({
     crimson: tradexCrimson,
   },
   fontFamily:
-    "var(--font-geist-sans), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    "var(--font-geist-sans), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   fontFamilyMonospace:
     "var(--font-geist-mono), 'JetBrains Mono', 'Fira Code', monospace",
   headings: {
@@ -108,8 +108,8 @@ export const theme = createTheme({
     cardLight: "#FFFFFF",
     textLight: "#0F172A",
     borderLight: "#E2E8F0",
-    surfaceDark: "#0A0F1D",
-    cardDark: "#0F172A",
+    surfaceDark: "#070B14",
+    cardDark: "#0D1424",
     textDark: "#F8FAFC",
     borderDark: "#1E293B",
   },
@@ -121,8 +121,8 @@ export const theme = createTheme({
       styles: {
         root: {
           fontWeight: 600,
-          transition:
-            "background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease",
+          letterSpacing: "0.01em",
+          transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
         },
       },
     },
@@ -132,14 +132,13 @@ export const theme = createTheme({
       },
       styles: {
         root: {
-          transition:
-            "background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
+          transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
         },
       },
     },
     Card: {
       defaultProps: {
-        radius: "md",
+        radius: "lg",
         withBorder: true,
         padding: "md",
       },
@@ -149,8 +148,10 @@ export const theme = createTheme({
           borderColor:
             "var(--surface-border, var(--mantine-color-default-border))",
           color: "var(--mantine-color-text)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
           transition:
-            "background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
+            "background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
         },
       },
     },
@@ -179,7 +180,7 @@ export const theme = createTheme({
             "var(--surface-border, var(--mantine-color-default-border))",
           color: "var(--mantine-color-text)",
           transition:
-            "background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease",
+            "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
         },
       },
     },
@@ -194,7 +195,23 @@ export const theme = createTheme({
             "var(--surface-border, var(--mantine-color-default-border))",
           color: "var(--mantine-color-text)",
           transition:
-            "background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease",
+            "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+        },
+      },
+    },
+    NumberInput: {
+      defaultProps: {
+        radius: "md",
+      },
+      styles: {
+        input: {
+          backgroundColor: "var(--surface-card, var(--mantine-color-default))",
+          borderColor:
+            "var(--surface-border, var(--mantine-color-default-border))",
+          color: "var(--mantine-color-text)",
+          fontVariantNumeric: "tabular-nums",
+          transition:
+            "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
         },
       },
     },
@@ -209,12 +226,14 @@ export const theme = createTheme({
             "var(--surface-border, var(--mantine-color-default-border))",
           color: "var(--mantine-color-text)",
           transition:
-            "background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease",
+            "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
         },
         dropdown: {
-          backgroundColor: "var(--surface-card, var(--mantine-color-default))",
+          backgroundColor:
+            "var(--surface-card-elevated, var(--mantine-color-default))",
           borderColor:
             "var(--surface-border, var(--mantine-color-default-border))",
+          boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.3)",
         },
       },
     },
@@ -224,39 +243,43 @@ export const theme = createTheme({
       },
       styles: {
         root: {
-          fontWeight: 600,
+          fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.04em",
+          fontVariantNumeric: "tabular-nums",
           transition:
-            "background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease",
+            "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
         },
       },
     },
     Modal: {
       defaultProps: {
-        radius: "md",
+        radius: "lg",
         centered: true,
         overlayProps: {
-          backgroundOpacity: 0.6,
-          blur: 6,
+          backgroundOpacity: 0.65,
+          blur: 10,
         },
       },
       styles: {
         content: {
-          backgroundColor: "var(--surface-card, var(--mantine-color-default))",
+          backgroundColor:
+            "var(--surface-card-elevated, var(--mantine-color-default))",
           borderColor:
             "var(--surface-border, var(--mantine-color-default-border))",
           borderWidth: "1px",
           borderStyle: "solid",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
+          boxShadow: "0 30px 60px -12px rgba(0, 0, 0, 0.45)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
           transition: "background-color 0.25s ease, border-color 0.25s ease",
         },
         header: {
-          backgroundColor: "var(--surface-card, var(--mantine-color-default))",
+          backgroundColor: "transparent",
           borderBottom:
             "1px solid var(--surface-border, var(--mantine-color-default-border))",
           paddingBottom: "14px",
-          transition: "background-color 0.25s ease, border-color 0.25s ease",
+          transition: "border-color 0.25s ease",
         },
         title: {
           fontWeight: 700,
@@ -264,7 +287,7 @@ export const theme = createTheme({
           color: "var(--mantine-color-text)",
         },
         body: {
-          paddingTop: "16px",
+          paddingTop: "18px",
           color: "var(--mantine-color-text)",
         },
       },
@@ -286,10 +309,10 @@ export const theme = createTheme({
         },
         th: {
           color: "var(--mantine-color-dimmed)",
-          fontWeight: 600,
-          fontSize: "12px",
+          fontWeight: 700,
+          fontSize: "11px",
           textTransform: "uppercase",
-          letterSpacing: "0.05em",
+          letterSpacing: "0.06em",
           borderColor:
             "var(--surface-border, var(--mantine-color-default-border))",
           padding: "12px 14px",
@@ -300,9 +323,6 @@ export const theme = createTheme({
           padding: "12px 14px",
           fontSize: "13px",
           color: "var(--mantine-color-text)",
-        },
-        tr: {
-          transition: "background-color 0.15s ease",
         },
       },
     },

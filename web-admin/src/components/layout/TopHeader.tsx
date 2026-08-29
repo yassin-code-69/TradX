@@ -44,19 +44,29 @@ const PATH_LABELS: Record<string, string> = {
   mega: "Mega Draw",
   daily: "Daily Draw",
   hourly: "Hourly Draw",
-  numbers: "Numbers",
+  numbers: "Numbers Matrix",
   tickets: "Tickets",
+  active: "Active",
+  winning: "Winning Tickets",
   results: "Results & Winners",
-  winners: "Winners",
+  winners: "Winners List",
+  pending: "Pending Verification",
+  publish: "Publish Results",
   finance: "Financial",
-  wallets: "Wallets",
-  deposits: "Add Money Requests",
+  wallets: "Wallets Overview",
+  deposits: "Deposit Requests",
   withdrawals: "Withdrawals",
   transfers: "Transfers",
+  ledger: "Ledger Transactions",
   transactions: "Transactions",
+  adjustments: "Adjustments",
   users: "Users",
+  blocked: "Blocked Users",
   settings: "Settings",
-  profile: "Profile",
+  gateways: "Payment Gateways",
+  general: "General Settings",
+  profile: "Admin Profile",
+  security: "Security & Keys",
 };
 
 interface TopHeaderProps {
@@ -94,7 +104,8 @@ export function TopHeader({
         textDecoration: "none",
         color: "var(--mantine-color-dimmed)",
         fontSize: "13px",
-        fontWeight: 500,
+        fontWeight: 600,
+        letterSpacing: "0.02em",
       }}
     >
       TRADEX
@@ -111,8 +122,8 @@ export function TopHeader({
           <Text
             key={url}
             size="xs"
-            fw={600}
-            c={isDark ? "tradexGold.4" : "tradexGold.8"}
+            fw={700}
+            style={{ color: "var(--brand-gold-text)" }}
           >
             {label}
           </Text>
@@ -197,25 +208,29 @@ export function TopHeader({
       {/* Right: Search, Status, Theme, Notifications & User Menu */}
       <Group gap="sm" wrap="nowrap">
         {/* Global Search Box */}
-        <Box visibleFrom="md" w={240}>
+        <Box visibleFrom="md" w={260}>
           <TextInput
             placeholder="Search draws, tickets, txns..."
             size="xs"
-            leftSection={<IconSearch size={14} stroke={1.5} />}
+            leftSection={<IconSearch size={14} stroke={1.75} />}
             rightSection={
               <Group gap={2}>
-                <Kbd size="xs">⌘</Kbd>
-                <Kbd size="xs">K</Kbd>
+                <Kbd size="xs" style={{ fontSize: "10px", padding: "1px 4px" }}>
+                  ⌘
+                </Kbd>
+                <Kbd size="xs" style={{ fontSize: "10px", padding: "1px 4px" }}>
+                  K
+                </Kbd>
               </Group>
             }
             styles={{
               input: {
-                backgroundColor: isDark ? "#0F172A" : "#F1F5F9",
-                borderColor: isDark ? "#1E293B" : "#CBD5E1",
+                backgroundColor: "var(--header-search-bg)",
+                borderColor: "var(--header-search-border)",
                 color: "var(--mantine-color-text)",
                 fontSize: "12px",
-                transition:
-                  "background-color 0.2s ease, border-color 0.2s ease",
+                borderRadius: "8px",
+                transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
               },
             }}
           />
@@ -230,7 +245,9 @@ export function TopHeader({
           styles={{
             root: {
               textTransform: "capitalize",
-              fontWeight: 500,
+              fontWeight: 600,
+              backgroundColor: "var(--status-emerald-bg)",
+              borderColor: "var(--status-emerald-border)",
             },
           }}
         >
@@ -247,20 +264,19 @@ export function TopHeader({
             onClick={handleToggleColorScheme}
             aria-label="Toggle color scheme"
             style={{
-              transition:
-                "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+              transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
             {isDark ? (
               <IconSun
                 size={18}
-                stroke={1.5}
-                color="var(--mantine-color-yellow-4)"
+                stroke={1.75}
+                color="var(--mantine-color-tradexGold-4)"
               />
             ) : (
               <IconMoon
                 size={18}
-                stroke={1.5}
+                stroke={1.75}
                 color="var(--mantine-color-tradexNavy-7)"
               />
             )}
@@ -269,23 +285,16 @@ export function TopHeader({
 
         {/* Notification Bell */}
         <Tooltip label="Notifications">
-          <Indicator
-            inline
-            size={9}
-            offset={4}
-            color={isDark ? "tradexGold.5" : "tradexGold.7"}
-            processing
-          >
+          <Indicator inline size={8} offset={4} color="tradexGold" processing>
             <ActionIcon
               variant="default"
               size="md"
               aria-label="Notifications"
               style={{
-                transition:
-                  "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+                transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
               }}
             >
-              <IconBell size={18} stroke={1.5} />
+              <IconBell size={18} stroke={1.6} />
             </ActionIcon>
           </Indicator>
         </Tooltip>
@@ -294,43 +303,50 @@ export function TopHeader({
 
         {/* Admin User Menu */}
         <Menu
-          shadow="md"
-          width={220}
+          shadow="xl"
+          width={230}
           position="bottom-end"
-          transitionProps={{ transition: "pop-top-right" }}
+          transitionProps={{ transition: "pop-top-right", duration: 180 }}
         >
           <Menu.Target>
             <UnstyledButton
               p={4}
+              px={6}
               style={{
-                borderRadius: "8px",
-                transition: "background-color 0.15s ease",
+                borderRadius: "10px",
+                backgroundColor: "var(--header-btn-bg)",
+                border: "1px solid var(--header-btn-border)",
+                transition: "all 0.15s ease",
               }}
             >
               <Group gap="xs" wrap="nowrap">
                 <Avatar
                   radius="xl"
                   size="sm"
-                  color="tradexNavy"
-                  bg={isDark ? "tradexGold.5" : "tradexGold.6"}
-                  c="dark.9"
-                  fw={700}
+                  variant="gradient"
+                  gradient={{ from: "#D97706", to: "#F59E0B", deg: 135 }}
+                  c="#070B14"
+                  fw={800}
                 >
                   {userInitials}
                 </Avatar>
                 <Box visibleFrom="sm" style={{ textAlign: "left" }}>
-                  <Text size="xs" fw={600} lh={1.2}>
+                  <Text size="xs" fw={700} lh={1.2}>
                     {adminUser?.profile?.fullName ||
                       adminUser?.username ||
                       "Admin"}
                   </Text>
                   <Badge
                     size="xs"
-                    variant={isDark ? "light" : "outline"}
+                    variant="filled"
                     color="tradexGold"
                     px={4}
                     h={14}
-                    style={{ fontSize: "9px", fontWeight: 600 }}
+                    style={{
+                      fontSize: "9px",
+                      fontWeight: 700,
+                      color: "#070B14",
+                    }}
                   >
                     {roleDisplay}
                   </Badge>
@@ -344,14 +360,9 @@ export function TopHeader({
             </UnstyledButton>
           </Menu.Target>
 
-          <Menu.Dropdown
-            style={{
-              backgroundColor: "var(--mantine-color-body)",
-              borderColor: "var(--mantine-color-default-border)",
-            }}
-          >
-            <Box px="xs" py={6}>
-              <Text size="xs" fw={600}>
+          <Menu.Dropdown>
+            <Box px="xs" py={8}>
+              <Text size="xs" fw={700}>
                 {adminUser?.profile?.fullName ||
                   adminUser?.username ||
                   "Administrator"}
@@ -368,22 +379,25 @@ export function TopHeader({
               leftSection={<IconUser size={15} stroke={1.5} />}
               component={Link}
               href="/settings/profile"
+              prefetch={true}
             >
-              My Profile
+              My Profile & Account
             </Menu.Item>
             <Menu.Item
               leftSection={<IconShieldLock size={15} stroke={1.5} />}
               component={Link}
               href="/settings/security"
+              prefetch={true}
             >
-              Security
+              Security & Auth Keys
             </Menu.Item>
             <Menu.Item
               leftSection={<IconSettings size={15} stroke={1.5} />}
               component={Link}
-              href="/settings"
+              href="/settings/gateways"
+              prefetch={true}
             >
-              Settings
+              Payment & System Settings
             </Menu.Item>
 
             <Menu.Divider />

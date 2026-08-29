@@ -1,6 +1,6 @@
 "use client";
 
-import { AppShell, useComputedColorScheme } from "@mantine/core";
+import { AppShell, Box } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { usePathname } from "next/navigation";
 import type React from "react";
@@ -19,10 +19,6 @@ export function AdminShell({ children }: AdminShellProps) {
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] =
     useDisclosure(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const computedColorScheme = useComputedColorScheme("dark", {
-    getInitialValueInEffect: true,
-  });
-  const isDark = computedColorScheme === "dark";
 
   // Load saved sidebar collapsed state on mount
   useEffect(() => {
@@ -71,20 +67,25 @@ export function AdminShell({ children }: AdminShellProps) {
       padding="lg"
       styles={{
         header: {
-          backgroundColor: isDark ? "#0F172A" : "#FFFFFF",
-          borderColor: isDark ? "#1E293B" : "#E2E8F0",
-          transition: "background-color 0.2s ease, border-color 0.2s ease",
+          backgroundColor: "var(--glass-bg)",
+          borderColor: "var(--glass-border)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          transition: "background-color 0.25s ease, border-color 0.25s ease",
+          zIndex: 100,
         },
         navbar: {
-          backgroundColor: isDark ? "#0F172A" : "#FFFFFF",
-          borderColor: isDark ? "#1E293B" : "#E2E8F0",
+          backgroundColor: "var(--glass-bg-elevated)",
+          borderColor: "var(--glass-border)",
+          // PERF-06: Removed backdropFilter blur to eliminate expensive GPU rasterization on 95% opaque navbar
           transition:
-            "width 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease",
+            "width 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease, border-color 0.25s ease",
         },
         main: {
-          backgroundColor: isDark ? "#0A0F1D" : "#F8FAFC",
+          backgroundColor: "var(--surface-ground, var(--mantine-color-body))",
+          backgroundImage: "var(--surface-bg-gradient)",
           minHeight: "100vh",
-          transition: "background-color 0.2s ease",
+          transition: "background-color 0.25s ease",
         },
       }}
     >
@@ -101,7 +102,11 @@ export function AdminShell({ children }: AdminShellProps) {
         <Sidebar isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} />
       </AppShell.Navbar>
 
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main>
+        <Box maw={1600} mx="auto">
+          {children}
+        </Box>
+      </AppShell.Main>
     </AppShell>
   );
 }

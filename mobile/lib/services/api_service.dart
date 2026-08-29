@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:tradex/config/supabase_config.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
 
-  String baseUrl = 'http://localhost:4000/api/v1';
+  String baseUrl = SupabaseConfig.backendBaseUrl;
   String? _authToken;
 
   void setAuthToken(String token) {

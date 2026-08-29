@@ -46,8 +46,8 @@ export function DepositReceiptModal({
       onClose={onClose}
       title={
         <Group gap="xs">
-          <IconReceipt2 size={20} color="#fad045" />
-          <Text fw={700} size="md">
+          <IconReceipt2 size={20} color="#F59E0B" />
+          <Text fw={800} size="md">
             Deposit Receipt & Proof Verification
           </Text>
         </Group>
@@ -57,26 +57,23 @@ export function DepositReceiptModal({
     >
       <Stack gap="md">
         {/* Payment Summary Header */}
-        <Paper p="md" radius="md" bg="dark.7" withBorder>
+        <Paper p="md" radius="lg" withBorder>
           <Group justify="space-between" align="flex-start">
             <Stack gap={2}>
               <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                 Deposit Amount
               </Text>
-              <Text size="xl" fw={800} c="emerald.4">
+              <Text size="xl" fw={900} c="emerald.4" className="font-tabular">
                 {deposit.formattedAmount}
               </Text>
               <Text size="xs" c="dimmed">
-                Method:{" "}
-                <strong style={{ color: "#fff" }}>
-                  {deposit.paymentMethod}
-                </strong>
+                Method: <strong>{deposit.paymentMethod}</strong>
               </Text>
             </Stack>
             <Badge
               color={getStatusColor(deposit.status)}
               size="lg"
-              variant="light"
+              variant="filled"
             >
               {deposit.status}
             </Badge>
@@ -84,22 +81,22 @@ export function DepositReceiptModal({
         </Paper>
 
         {/* Transaction Metadata Grid */}
-        <Paper p="md" radius="md" withBorder bg="dark.8">
+        <Paper p="md" radius="lg" withBorder>
           <Stack gap="xs">
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 User / Sender:
               </Text>
-              <Text size="sm" fw={600}>
+              <Text size="sm" fw={700}>
                 {deposit.userFullName} (@{deposit.username})
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Sender Account / Number:
               </Text>
               <Group gap={4}>
-                <Text size="sm" ff="monospace" fw={600}>
+                <Text size="sm" ff="monospace" fw={700}>
                   {deposit.senderAccount}
                 </Text>
                 <CopyButton value={deposit.senderAccount} timeout={2000}>
@@ -123,11 +120,16 @@ export function DepositReceiptModal({
               </Group>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Provider Transaction ID (TrxID):
               </Text>
               <Group gap={4}>
-                <Badge variant="filled" color="dark.5" ff="monospace" size="md">
+                <Badge
+                  variant="light"
+                  color="tradexGold"
+                  ff="monospace"
+                  size="md"
+                >
                   {deposit.providerTransactionId}
                 </Badge>
                 <CopyButton
@@ -154,27 +156,27 @@ export function DepositReceiptModal({
               </Group>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Submitted At:
               </Text>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" className="font-tabular">
                 {formatDateTime(deposit.submittedAt)}
               </Text>
             </Group>
             {deposit.reviewedBy && (
               <Group justify="space-between">
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c="dimmed" fw={600}>
                   Reviewed By:
                 </Text>
-                <Text size="xs">
+                <Text size="xs" className="font-tabular">
                   {deposit.reviewedBy} at{" "}
                   {formatDateTime(deposit.reviewedAt || "")}
                 </Text>
               </Group>
             )}
             {deposit.rejectReason && (
-              <Paper p="xs" bg="red.9" radius="sm" mt="xs">
-                <Text size="xs" c="white" fw={600}>
+              <Paper p="xs" radius="sm" mt="xs" withBorder>
+                <Text size="xs" c="red.4" fw={700}>
                   Rejection Reason: {deposit.rejectReason}
                 </Text>
               </Paper>
@@ -203,13 +205,7 @@ export function DepositReceiptModal({
           </Group>
 
           {deposit.proofImageUrl ? (
-            <Paper
-              withBorder
-              radius="md"
-              style={{ overflow: "hidden" }}
-              p="xs"
-              bg="dark.9"
-            >
+            <Paper withBorder radius="md" style={{ overflow: "hidden" }} p="xs">
               <Image
                 src={deposit.proofImageUrl}
                 alt="Deposit proof screenshot"
@@ -220,7 +216,7 @@ export function DepositReceiptModal({
               />
             </Paper>
           ) : (
-            <Paper p="lg" withBorder radius="md" ta="center" bg="dark.8">
+            <Paper p="lg" withBorder radius="md" ta="center">
               <Text size="sm" c="dimmed">
                 No screenshot attachment uploaded. Verified via TrxID and SMS
                 webhook.

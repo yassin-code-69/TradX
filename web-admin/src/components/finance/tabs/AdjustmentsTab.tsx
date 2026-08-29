@@ -13,9 +13,10 @@ import {
   Title,
 } from "@mantine/core";
 import { IconScale } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { formatDateTime } from "@/lib/formatters";
 import { useAdminStore } from "@/lib/store";
+import type { LedgerTransactionItem } from "@/types";
 
 const PAGE_SIZE = 25;
 
@@ -24,7 +25,7 @@ interface AdjustmentsTabProps {
 }
 
 export function AdjustmentsTab({ onOpenAdjustmentModal }: AdjustmentsTabProps) {
-  const { ledgerTransactions } = useAdminStore();
+  const ledgerTransactions = useAdminStore((s) => s.ledgerTransactions);
   const [page, setPage] = useState(1);
 
   // Past admin adjustments list
@@ -42,10 +43,10 @@ export function AdjustmentsTab({ onOpenAdjustmentModal }: AdjustmentsTabProps) {
 
   return (
     <Stack gap="md">
-      <Paper p="lg" radius="md" withBorder bg="dark.8">
+      <Paper p="lg" radius="lg" withBorder>
         <Group justify="space-between" align="center">
           <Stack gap="xs">
-            <Title order={4} c="white">
+            <Title order={4} fw={800}>
               Administrative Wallet Balance Mutations
             </Title>
             <Text size="sm" c="dimmed">
@@ -56,7 +57,9 @@ export function AdjustmentsTab({ onOpenAdjustmentModal }: AdjustmentsTabProps) {
           </Stack>
 
           <Button
-            color="yellow"
+            color="tradexGold"
+            className="btn-shimmer"
+            style={{ color: "#070B14", fontWeight: 800 }}
             size="md"
             leftSection={<IconScale size={18} />}
             onClick={onOpenAdjustmentModal}
@@ -66,8 +69,8 @@ export function AdjustmentsTab({ onOpenAdjustmentModal }: AdjustmentsTabProps) {
         </Group>
       </Paper>
 
-      <Card p="md" radius="md" withBorder bg="dark.8">
-        <Title order={5} mb="sm" c="white">
+      <Card p="md" radius="lg" withBorder>
+        <Title order={5} mb="sm" fw={800}>
           Adjustment Audit History
         </Title>
         <Table.ScrollContainer minWidth={700}>
@@ -93,46 +96,7 @@ export function AdjustmentsTab({ onOpenAdjustmentModal }: AdjustmentsTabProps) {
                 </Table.Tr>
               ) : (
                 paginatedAdjustments.map((adj) => (
-                  <Table.Tr key={adj.id}>
-                    <Table.Td>
-                      <Text size="xs" ff="monospace" c="dimmed">
-                        {adj.id}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>
-                        {adj.userFullName}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        @{adj.username}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge
-                        color={adj.direction === "CREDIT" ? "teal" : "red"}
-                      >
-                        {adj.direction}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text
-                        size="sm"
-                        fw={700}
-                        c={adj.direction === "CREDIT" ? "emerald.4" : "red.4"}
-                      >
-                        {adj.direction === "CREDIT" ? "+" : "-"}{" "}
-                        {adj.formattedAmount}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="xs">{adj.note || "-"}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="xs" c="dimmed">
-                        {formatDateTime(adj.createdAt)}
-                      </Text>
-                    </Table.Td>
-                  </Table.Tr>
+                  <AdjustmentTableRow key={adj.id} adjustment={adj} />
                 ))
               )}
             </Table.Tbody>
@@ -142,7 +106,7 @@ export function AdjustmentsTab({ onOpenAdjustmentModal }: AdjustmentsTabProps) {
         {/* Pagination Controls */}
         {adminAdjustments.length > 0 && (
           <Group justify="space-between" align="center" mt="xs" wrap="wrap">
-            <Text size="xs" c="dimmed">
+            <Text size="xs" c="dimmed" fw={500}>
               Showing {(page - 1) * PAGE_SIZE + 1} to{" "}
               {Math.min(page * PAGE_SIZE, adminAdjustments.length)} of{" "}
               {adminAdjustments.length} entries
@@ -163,3 +127,58 @@ export function AdjustmentsTab({ onOpenAdjustmentModal }: AdjustmentsTabProps) {
     </Stack>
   );
 }
+
+// ==================== MEMOIZED ADJUSTMENT TABLE ROW ====================
+
+interface AdjustmentTableRowProps {
+  adjustment: LedgerTransactionItem;
+}
+
+const AdjustmentTableRow = React.memo(function AdjustmentTableRow({
+  adjustment: adj,
+}: AdjustmentTableRowProps) {
+  return (
+    <Table.Tr key={adj.id}>
+      <Table.Td>
+        <Text size="xs" ff="monospace" c="dimmed">
+          {adj.id}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" fw={700}>
+          {adj.userFullName}
+        </Text>
+        <Text size="xs" c="dimmed">
+          @{adj.username}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge
+          color={adj.direction === "CREDIT" ? "teal" : "red"}
+          size="xs"
+          variant="filled"
+        >
+          {adj.direction}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text
+          size="sm"
+          fw={800}
+          className="font-tabular"
+          c={adj.direction === "CREDIT" ? "emerald.4" : "red.4"}
+        >
+          {adj.direction === "CREDIT" ? "+" : "-"} {adj.formattedAmount}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs">{adj.note || "-"}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs" c="dimmed" className="font-tabular">
+          {formatDateTime(adj.createdAt)}
+        </Text>
+      </Table.Td>
+    </Table.Tr>
+  );
+});

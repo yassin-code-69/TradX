@@ -50,7 +50,8 @@ export function AdminAdjustBalanceModal({
   preselectedUserId,
 }: AdminAdjustBalanceModalProps) {
   const adjustBalanceMutation = useAdminAdjustBalance();
-  const { users, adjustUserBalance } = useAdminStore();
+  const users = useAdminStore((s) => s.users);
+  const adjustUserBalance = useAdminStore((s) => s.adjustUserBalance);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(
     preselectedUserId || null,
   );
@@ -162,8 +163,8 @@ export function AdminAdjustBalanceModal({
       onClose={handleClose}
       title={
         <Group gap="xs">
-          <IconScale size={20} color="#fad045" />
-          <Text fw={700} size="md">
+          <IconScale size={20} color="#F59E0B" />
+          <Text fw={800} size="md">
             Administrative Balance Adjustment
           </Text>
         </Group>
@@ -199,7 +200,7 @@ export function AdminAdjustBalanceModal({
 
             {/* Adjustment Type Selector */}
             <Stack gap={4}>
-              <Text size="sm" fw={500}>
+              <Text size="sm" fw={600}>
                 Adjustment Type
               </Text>
               <SegmentedControl
@@ -213,7 +214,9 @@ export function AdminAdjustBalanceModal({
                         <Badge color="teal" size="xs">
                           CREDIT
                         </Badge>
-                        <Text size="sm">Add Funds to User</Text>
+                        <Text size="sm" fw={600}>
+                          Add Funds to User
+                        </Text>
                       </Group>
                     ),
                     value: "CREDIT",
@@ -224,7 +227,9 @@ export function AdminAdjustBalanceModal({
                         <Badge color="red" size="xs">
                           DEBIT
                         </Badge>
-                        <Text size="sm">Deduct Funds from User</Text>
+                        <Text size="sm" fw={600}>
+                          Deduct Funds from User
+                        </Text>
                       </Group>
                     ),
                     value: "DEBIT",
@@ -248,36 +253,48 @@ export function AdminAdjustBalanceModal({
 
             {/* Realtime Projected Balance Display */}
             {targetUser && (
-              <Paper p="md" radius="md" withBorder bg="dark.8">
+              <Paper p="md" radius="md" withBorder>
                 <Group justify="space-between" align="center">
                   <Stack gap={2}>
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c="dimmed" fw={600}>
                       Current Available
                     </Text>
-                    <Text size="md" fw={600}>
+                    <Text size="md" fw={700} className="font-tabular">
                       {formatBDT(currentAvailableMinor)}
                     </Text>
                   </Stack>
-                  <IconArrowRight size={20} color="#94a3b8" />
+                  <IconArrowRight
+                    size={20}
+                    color="var(--mantine-color-dimmed)"
+                  />
                   <Stack gap={2}>
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c="dimmed" fw={600}>
                       Adjustment
                     </Text>
                     <Text
                       size="md"
-                      fw={700}
+                      fw={800}
+                      className="font-tabular"
                       c={adjustmentType === "CREDIT" ? "emerald.4" : "red.4"}
                     >
                       {adjustmentType === "CREDIT" ? "+" : "-"}{" "}
                       {formatBDT(adjustmentMinor)}
                     </Text>
                   </Stack>
-                  <IconArrowRight size={20} color="#94a3b8" />
+                  <IconArrowRight
+                    size={20}
+                    color="var(--mantine-color-dimmed)"
+                  />
                   <Stack gap={2} ta="right">
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c="dimmed" fw={600}>
                       Projected Balance
                     </Text>
-                    <Text size="md" fw={800} c="cyan.4">
+                    <Text
+                      size="md"
+                      fw={900}
+                      c="cyan.4"
+                      className="font-tabular"
+                    >
                       {formatBDT(projectedAvailableMinor)}
                     </Text>
                   </Stack>
@@ -311,7 +328,8 @@ export function AdminAdjustBalanceModal({
                 Cancel
               </Button>
               <Button
-                color="yellow"
+                color="tradexGold"
+                style={{ color: "#070B14", fontWeight: 800 }}
                 onClick={handleProceedToConfirm}
                 rightSection={<IconArrowRight size={16} />}
               >
@@ -333,7 +351,7 @@ export function AdminAdjustBalanceModal({
               the user&apos;s authoritative ledger balance immediately.
             </Alert>
 
-            <Paper p="lg" radius="md" withBorder bg="dark.8">
+            <Paper p="lg" radius="md" withBorder>
               <Stack gap="sm">
                 <Group justify="space-between">
                   <Text size="sm" c="dimmed">
@@ -358,7 +376,9 @@ export function AdminAdjustBalanceModal({
                   <Text size="sm" c="dimmed">
                     Current Balance:
                   </Text>
-                  <Text size="sm">{formatBDT(currentAvailableMinor)}</Text>
+                  <Text size="sm" className="font-tabular">
+                    {formatBDT(currentAvailableMinor)}
+                  </Text>
                 </Group>
                 <Group justify="space-between">
                   <Text size="sm" c="dimmed">
@@ -367,6 +387,7 @@ export function AdminAdjustBalanceModal({
                   <Text
                     size="md"
                     fw={800}
+                    className="font-tabular"
                     c={adjustmentType === "CREDIT" ? "emerald.4" : "yellow.4"}
                   >
                     {formatBDT(projectedAvailableMinor)}
@@ -390,8 +411,8 @@ export function AdminAdjustBalanceModal({
                 )}
                 <Divider my={4} />
                 <Text size="xs" c="dimmed">
-                  Authorized by: <strong>Admin Shahin Ahmed</strong> • IP:
-                  10.0.4.18 • Immutable Ledger UUID created upon submit.
+                  Authorized by: <strong>Admin Operations</strong> • Immutable
+                  Ledger UUID created upon submit.
                 </Text>
               </Stack>
             </Paper>

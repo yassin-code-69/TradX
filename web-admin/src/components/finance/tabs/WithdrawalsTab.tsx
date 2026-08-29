@@ -15,8 +15,9 @@ import {
   TextInput,
   Tooltip,
 } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import { IconCheck, IconCopy, IconSearch, IconX } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { formatDateTime, getStatusColor } from "@/lib/formatters";
 import { useAdminStore } from "@/lib/store";
 import type { WithdrawalItem } from "@/types";
@@ -26,10 +27,12 @@ import { RejectWithdrawalModal } from "../RejectWithdrawalModal";
 const PAGE_SIZE = 25;
 
 export function WithdrawalsTab() {
-  const { withdrawals } = useAdminStore();
+  const withdrawals = useAdminStore((s) => s.withdrawals);
 
-  // Search and filter states
+  // Search and filter states with concurrent deferred value
   const [withdrawalSearch, setWithdrawalSearch] = useState("");
+  const deferredSearch = useDeferredValue(withdrawalSearch);
+  const [debouncedSearch] = useDebouncedValue(deferredSearch, 200);
   const [withdrawalStatusFilter, setWithdrawalStatusFilter] =
     useState<string>("ALL");
   const [withdrawalMethodFilter, setWithdrawalMethodFilter] =
@@ -42,49 +45,59 @@ export function WithdrawalsTab() {
   const [selectedRejectWithdrawal, setSelectedRejectWithdrawal] =
     useState<WithdrawalItem | null>(null);
 
-  // Filtered Withdrawals
+  // Filtered Withdrawals with debounced query
   const filteredWithdrawals = useMemo(() => {
+    const q = debouncedSearch.toLowerCase().trim();
     return withdrawals.filter((w) => {
-      const matchesSearch =
-        w.username.toLowerCase().includes(withdrawalSearch.toLowerCase()) ||
-        w.userFullName.toLowerCase().includes(withdrawalSearch.toLowerCase()) ||
-        w.receiverAccount.includes(withdrawalSearch) ||
-        w.id.toLowerCase().includes(withdrawalSearch.toLowerCase());
+      if (q) {
+        const matchesSearch =
+          w.username.toLowerCase().includes(q) ||
+          w.userFullName.toLowerCase().includes(q) ||
+          w.receiverAccount.includes(q) ||
+          w.id.toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+      }
 
-      const matchesStatus =
-        withdrawalStatusFilter === "ALL" || w.status === withdrawalStatusFilter;
+      if (
+        withdrawalStatusFilter !== "ALL" &&
+        w.status !== withdrawalStatusFilter
+      )
+        return false;
 
-      const matchesMethod =
-        withdrawalMethodFilter === "ALL" ||
-        w.paymentMethod === withdrawalMethodFilter;
+      if (
+        withdrawalMethodFilter !== "ALL" &&
+        w.paymentMethod !== withdrawalMethodFilter
+      )
+        return false;
 
-      return matchesSearch && matchesStatus && matchesMethod;
+      return true;
     });
   }, [
     withdrawals,
-    withdrawalSearch,
+    debouncedSearch,
     withdrawalStatusFilter,
     withdrawalMethodFilter,
   ]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    if (withdrawalSearch || withdrawalStatusFilter || withdrawalMethodFilter) {
-      setPage(1);
-    } else {
-      setPage(1);
-    }
-  }, [withdrawalSearch, withdrawalStatusFilter, withdrawalMethodFilter]);
-
   const totalPages = Math.ceil(filteredWithdrawals.length / PAGE_SIZE) || 1;
+  const currentPage = Math.min(page, totalPages);
+
   const paginatedWithdrawals = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
     return filteredWithdrawals.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [filteredWithdrawals, page]);
+  }, [filteredWithdrawals, currentPage]);
+
+  const handleOpenApprove = useCallback((w: WithdrawalItem) => {
+    setSelectedApproveWithdrawal(w);
+  }, []);
+
+  const handleOpenReject = useCallback((w: WithdrawalItem) => {
+    setSelectedRejectWithdrawal(w);
+  }, []);
 
   return (
     <>
-      <Card p="md" radius="md" withBorder bg="dark.8">
+      <Card p="md" radius="lg" withBorder>
         <Stack gap="md">
           {/* Filter Controls */}
           <Group justify="space-between" wrap="wrap">
@@ -158,108 +171,12 @@ export function WithdrawalsTab() {
                   </Table.Tr>
                 ) : (
                   paginatedWithdrawals.map((w) => (
-                    <Table.Tr key={w.id}>
-                      <Table.Td>
-                        <Text size="xs" ff="monospace" fw={600} c="dimmed">
-                          #{w.id}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" fw={600}>
-                          {w.userFullName}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          @{w.username}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge color="blue" size="sm">
-                          {w.paymentMethod}
-                        </Badge>
-                      </Table.Td>
-                      <Table.Td>
-                        <Group gap={4}>
-                          <Text size="sm" ff="monospace" fw={600} c="cyan.4">
-                            {w.receiverAccount}
-                          </Text>
-                          <CopyButton value={w.receiverAccount} timeout={2000}>
-                            {({ copied, copy }) => (
-                              <Tooltip
-                                label={copied ? "Copied" : "Copy"}
-                                withArrow
-                              >
-                                <ActionIcon
-                                  color={copied ? "teal" : "gray"}
-                                  variant="subtle"
-                                  size="xs"
-                                  onClick={copy}
-                                >
-                                  {copied ? (
-                                    <IconCheck size={12} />
-                                  ) : (
-                                    <IconCopy size={12} />
-                                  )}
-                                </ActionIcon>
-                              </Tooltip>
-                            )}
-                          </CopyButton>
-                        </Group>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm">{w.formattedAmount}</Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="xs" c="dimmed">
-                          {w.formattedFee}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" fw={800} c="emerald.4">
-                          {w.formattedNetAmount}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="xs" c="dimmed">
-                          {formatDateTime(w.requestedAt)}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge color={getStatusColor(w.status)} size="sm">
-                          {w.status}
-                        </Badge>
-                      </Table.Td>
-                      <Table.Td>
-                        <Group justify="flex-end" gap={6}>
-                          {w.status === "PENDING" ? (
-                            <>
-                              <Tooltip label="Reject & Return Funds">
-                                <ActionIcon
-                                  size="sm"
-                                  variant="light"
-                                  color="red"
-                                  onClick={() => setSelectedRejectWithdrawal(w)}
-                                >
-                                  <IconX size={14} />
-                                </ActionIcon>
-                              </Tooltip>
-                              <Button
-                                size="xs"
-                                color="teal"
-                                onClick={() => setSelectedApproveWithdrawal(w)}
-                              >
-                                Approve
-                              </Button>
-                            </>
-                          ) : (
-                            <Text size="xs" c="dimmed">
-                              {w.status === "APPROVED"
-                                ? w.transactionReference || "Completed"
-                                : "Rejected"}
-                            </Text>
-                          )}
-                        </Group>
-                      </Table.Td>
-                    </Table.Tr>
+                    <WithdrawalTableRow
+                      key={w.id}
+                      withdrawal={w}
+                      onApprove={handleOpenApprove}
+                      onReject={handleOpenReject}
+                    />
                   ))
                 )}
               </Table.Tbody>
@@ -269,7 +186,7 @@ export function WithdrawalsTab() {
           {/* Pagination Controls */}
           {filteredWithdrawals.length > 0 && (
             <Group justify="space-between" align="center" mt="xs" wrap="wrap">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={500}>
                 Showing {(page - 1) * PAGE_SIZE + 1} to{" "}
                 {Math.min(page * PAGE_SIZE, filteredWithdrawals.length)} of{" "}
                 {filteredWithdrawals.length} entries
@@ -290,17 +207,131 @@ export function WithdrawalsTab() {
       </Card>
 
       {/* Modals */}
-      <ApproveWithdrawalModal
-        opened={!!selectedApproveWithdrawal}
-        onClose={() => setSelectedApproveWithdrawal(null)}
-        withdrawal={selectedApproveWithdrawal}
-      />
+      {selectedApproveWithdrawal && (
+        <ApproveWithdrawalModal
+          opened={!!selectedApproveWithdrawal}
+          onClose={() => setSelectedApproveWithdrawal(null)}
+          withdrawal={selectedApproveWithdrawal}
+        />
+      )}
 
-      <RejectWithdrawalModal
-        opened={!!selectedRejectWithdrawal}
-        onClose={() => setSelectedRejectWithdrawal(null)}
-        withdrawal={selectedRejectWithdrawal}
-      />
+      {selectedRejectWithdrawal && (
+        <RejectWithdrawalModal
+          opened={!!selectedRejectWithdrawal}
+          onClose={() => setSelectedRejectWithdrawal(null)}
+          withdrawal={selectedRejectWithdrawal}
+        />
+      )}
     </>
   );
 }
+
+// ==================== MEMOIZED WITHDRAWAL TABLE ROW ====================
+
+interface WithdrawalTableRowProps {
+  withdrawal: WithdrawalItem;
+  onApprove: (w: WithdrawalItem) => void;
+  onReject: (w: WithdrawalItem) => void;
+}
+
+const WithdrawalTableRow = React.memo(function WithdrawalTableRow({
+  withdrawal: w,
+  onApprove,
+  onReject,
+}: WithdrawalTableRowProps) {
+  return (
+    <Table.Tr key={w.id}>
+      <Table.Td>
+        <Text size="xs" ff="monospace" fw={600} c="dimmed">
+          #{w.id}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" fw={700}>
+          {w.userFullName}
+        </Text>
+        <Text size="xs" c="dimmed">
+          @{w.username}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge color="blue" size="sm" variant="light">
+          {w.paymentMethod}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Group gap={4}>
+          <Text size="sm" ff="monospace" fw={700} c="cyan.4">
+            {w.receiverAccount}
+          </Text>
+          <CopyButton value={w.receiverAccount} timeout={2000}>
+            {({ copied, copy }) => (
+              <Tooltip label={copied ? "Copied" : "Copy"} withArrow>
+                <ActionIcon
+                  color={copied ? "teal" : "gray"}
+                  variant="subtle"
+                  size="xs"
+                  onClick={copy}
+                >
+                  {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </CopyButton>
+        </Group>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" className="font-tabular" fw={600}>
+          {w.formattedAmount}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs" c="dimmed" className="font-tabular">
+          {w.formattedFee}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" fw={900} c="emerald.4" className="font-tabular">
+          {w.formattedNetAmount}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs" c="dimmed" className="font-tabular">
+          {formatDateTime(w.requestedAt)}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge color={getStatusColor(w.status)} size="sm" variant="filled">
+          {w.status}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Group justify="flex-end" gap={6}>
+          {w.status === "PENDING" ? (
+            <>
+              <Tooltip label="Reject & Return Funds">
+                <ActionIcon
+                  size="sm"
+                  variant="light"
+                  color="red"
+                  onClick={() => onReject(w)}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+              </Tooltip>
+              <Button size="xs" color="teal" onClick={() => onApprove(w)}>
+                Approve
+              </Button>
+            </>
+          ) : (
+            <Text size="xs" c="dimmed">
+              {w.status === "APPROVED"
+                ? w.transactionReference || "Completed"
+                : "Rejected"}
+            </Text>
+          )}
+        </Group>
+      </Table.Td>
+    </Table.Tr>
+  );
+});

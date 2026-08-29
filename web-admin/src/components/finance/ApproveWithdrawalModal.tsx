@@ -34,7 +34,7 @@ export function ApproveWithdrawalModal({
   withdrawal,
 }: ApproveWithdrawalModalProps) {
   const approveWithdrawalMutation = useApproveWithdrawal();
-  const { approveWithdrawal } = useAdminStore();
+  const approveWithdrawal = useAdminStore((s) => s.approveWithdrawal);
   const [transactionRef, setTransactionRef] = useState("");
   const [note, setNote] = useState("");
 
@@ -80,8 +80,8 @@ export function ApproveWithdrawalModal({
       onClose={onClose}
       title={
         <Group gap="xs">
-          <IconCashBanknote size={20} color="#20c997" />
-          <Text fw={700} size="md">
+          <IconCashBanknote size={20} color="#10B981" />
+          <Text fw={800} size="md">
             Process & Approve Withdrawal Payout
           </Text>
         </Group>
@@ -101,18 +101,18 @@ export function ApproveWithdrawalModal({
           ledger.
         </Alert>
 
-        <Paper p="md" radius="md" withBorder bg="dark.8">
+        <Paper p="md" radius="md" withBorder bg="var(--mantine-color-default)">
           <Stack gap="xs">
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 User:
               </Text>
-              <Text size="sm" fw={600}>
+              <Text size="sm" fw={700}>
                 {withdrawal.userFullName} (@{withdrawal.username})
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Destination Method:
               </Text>
               <Text size="sm" fw={600}>
@@ -120,7 +120,7 @@ export function ApproveWithdrawalModal({
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Receiver Account / Number:
               </Text>
               <Text size="sm" ff="monospace" fw={700} c="cyan.4">
@@ -129,16 +129,18 @@ export function ApproveWithdrawalModal({
             </Group>
             <Divider my={4} />
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Requested Gross Amount:
               </Text>
-              <Text size="sm">{withdrawal.formattedAmount}</Text>
+              <Text size="sm" className="font-tabular">
+                {withdrawal.formattedAmount}
+              </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Platform Fee (1%):
               </Text>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" className="font-tabular">
                 {withdrawal.formattedFee}
               </Text>
             </Group>
@@ -146,7 +148,7 @@ export function ApproveWithdrawalModal({
               <Text size="sm" fw={700}>
                 Net Payout Amount:
               </Text>
-              <Text size="lg" fw={800} c="emerald.4">
+              <Text size="lg" fw={900} c="emerald.4" className="font-tabular">
                 {withdrawal.formattedNetAmount}
               </Text>
             </Group>

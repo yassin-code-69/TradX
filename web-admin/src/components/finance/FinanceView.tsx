@@ -18,24 +18,63 @@ import {
   IconReceipt2,
   IconScale,
 } from "@tabler/icons-react";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { formatBDT } from "@/lib/formatters";
 import { useAdminStore } from "@/lib/store";
-import { AdminAdjustBalanceModal } from "./AdminAdjustBalanceModal";
 import { AdjustmentsTab } from "./tabs/AdjustmentsTab";
 import { DepositsTab } from "./tabs/DepositsTab";
 import { LedgerTab } from "./tabs/LedgerTab";
 import { TransfersTab } from "./tabs/TransfersTab";
 import { WithdrawalsTab } from "./tabs/WithdrawalsTab";
 
-export function FinanceView() {
-  const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") || "deposits";
-  const [activeTab, setActiveTab] = useState<string | null>(initialTab);
+const AdminAdjustBalanceModal = dynamic(
+  () =>
+    import("./AdminAdjustBalanceModal").then(
+      (mod) => mod.AdminAdjustBalanceModal,
+    ),
+  { ssr: false },
+);
+
+interface FinanceViewProps {
+  initialTab?: string;
+}
+
+export function FinanceView({ initialTab }: FinanceViewProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Derive active tab from pathname or initialTab
+  const getTabFromPath = useCallback(() => {
+    if (initialTab) return initialTab;
+    if (pathname.includes("/finance/withdrawals")) return "withdrawals";
+    if (pathname.includes("/finance/transfers")) return "transfers";
+    if (
+      pathname.includes("/finance/ledger") ||
+      pathname.includes("/finance/transactions")
+    )
+      return "ledger";
+    if (pathname.includes("/finance/adjustments")) return "adjustments";
+    return "deposits";
+  }, [initialTab, pathname]);
+
+  const [activeTab, setActiveTab] = useState<string | null>(getTabFromPath());
   const [adjustmentModalOpened, setAdjustmentModalOpened] = useState(false);
 
-  const { transfers, kpis } = useAdminStore();
+  const transfers = useAdminStore((s) => s.transfers);
+  const kpis = useAdminStore((s) => s.kpis);
+
+  useEffect(() => {
+    setActiveTab(getTabFromPath());
+  }, [getTabFromPath]);
+
+  const handleTabChange = (value: string | null) => {
+    if (!value) return;
+    setActiveTab(value);
+    router.push(`/finance/${value}`);
+  };
 
   return (
     <Stack gap="lg">
@@ -53,7 +92,7 @@ export function FinanceView() {
               Financial Operations
             </Text>
           </Group>
-          <Title order={2} fw={800} c="white">
+          <Title order={2} fw={800} c="var(--mantine-color-text)">
             Financial Management & Ledger
           </Title>
           <Text size="sm" c="dimmed">
@@ -75,7 +114,15 @@ export function FinanceView() {
 
       {/* Summary KPI Cards */}
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-        <Paper p="md" radius="md" withBorder bg="dark.8">
+        <Paper
+          p="md"
+          radius="md"
+          withBorder
+          bg="var(--surface-card, var(--mantine-color-default))"
+          component={Link}
+          href="/finance/deposits"
+          style={{ textDecoration: "none", cursor: "pointer" }}
+        >
           <Group justify="space-between">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">
               Pending Deposits
@@ -84,7 +131,13 @@ export function FinanceView() {
               {kpis.pendingDepositsCount} Needs Review
             </Badge>
           </Group>
-          <Text size="xl" fw={800} c="yellow.4" mt="xs">
+          <Text
+            size="xl"
+            fw={800}
+            c="yellow.4"
+            mt="xs"
+            className="font-tabular"
+          >
             {kpis.pendingDepositsAmount}
           </Text>
           <Text size="xs" c="dimmed" mt={4}>
@@ -92,7 +145,15 @@ export function FinanceView() {
           </Text>
         </Paper>
 
-        <Paper p="md" radius="md" withBorder bg="dark.8">
+        <Paper
+          p="md"
+          radius="md"
+          withBorder
+          bg="var(--surface-card, var(--mantine-color-default))"
+          component={Link}
+          href="/finance/withdrawals"
+          style={{ textDecoration: "none", cursor: "pointer" }}
+        >
           <Group justify="space-between">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">
               Pending Withdrawals
@@ -101,7 +162,13 @@ export function FinanceView() {
               {kpis.pendingWithdrawalsCount} Payouts
             </Badge>
           </Group>
-          <Text size="xl" fw={800} c="orange.4" mt="xs">
+          <Text
+            size="xl"
+            fw={800}
+            c="orange.4"
+            mt="xs"
+            className="font-tabular"
+          >
             {kpis.pendingWithdrawalsAmount}
           </Text>
           <Text size="xs" c="dimmed" mt={4}>
@@ -109,7 +176,15 @@ export function FinanceView() {
           </Text>
         </Paper>
 
-        <Paper p="md" radius="md" withBorder bg="dark.8">
+        <Paper
+          p="md"
+          radius="md"
+          withBorder
+          bg="var(--surface-card, var(--mantine-color-default))"
+          component={Link}
+          href="/finance/transfers"
+          style={{ textDecoration: "none", cursor: "pointer" }}
+        >
           <Group justify="space-between">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">
               User Transfers Today
@@ -118,7 +193,7 @@ export function FinanceView() {
               {transfers.length} Transactions
             </Badge>
           </Group>
-          <Text size="xl" fw={800} c="cyan.4" mt="xs">
+          <Text size="xl" fw={800} c="cyan.4" mt="xs" className="font-tabular">
             {formatBDT(transfers.reduce((acc, t) => acc + t.amountMinor, 0))}
           </Text>
           <Text size="xs" c="dimmed" mt={4}>
@@ -126,7 +201,15 @@ export function FinanceView() {
           </Text>
         </Paper>
 
-        <Paper p="md" radius="md" withBorder bg="dark.8">
+        <Paper
+          p="md"
+          radius="md"
+          withBorder
+          bg="var(--surface-card, var(--mantine-color-default))"
+          component={Link}
+          href="/finance/ledger"
+          style={{ textDecoration: "none", cursor: "pointer" }}
+        >
           <Group justify="space-between">
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">
               Total Revenue Pool
@@ -135,7 +218,13 @@ export function FinanceView() {
               Financial Health
             </Badge>
           </Group>
-          <Text size="xl" fw={800} c="emerald.4" mt="xs">
+          <Text
+            size="xl"
+            fw={800}
+            c="emerald.4"
+            mt="xs"
+            className="font-tabular"
+          >
             {kpis.totalRevenue}
           </Text>
           <Text size="xs" c="dimmed" mt={4}>
@@ -147,18 +236,10 @@ export function FinanceView() {
       {/* Main Tabs Component */}
       <Tabs
         value={activeTab}
-        onChange={setActiveTab}
+        onChange={handleTabChange}
         variant="pills"
         radius="md"
-        styles={{
-          tab: {
-            background: "rgba(15, 23, 42, 0.6)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            color: "#94a3b8",
-            fontWeight: 600,
-            padding: "10px 18px",
-          },
-        }}
+        keepMounted={false}
       >
         <Tabs.List mb="md">
           <Tabs.Tab
@@ -228,10 +309,14 @@ export function FinanceView() {
         </Tabs.Panel>
       </Tabs>
 
-      <AdminAdjustBalanceModal
-        opened={adjustmentModalOpened}
-        onClose={() => setAdjustmentModalOpened(false)}
-      />
+      {adjustmentModalOpened && (
+        <AdminAdjustBalanceModal
+          opened={adjustmentModalOpened}
+          onClose={() => setAdjustmentModalOpened(false)}
+        />
+      )}
     </Stack>
   );
 }
+
+export default FinanceView;

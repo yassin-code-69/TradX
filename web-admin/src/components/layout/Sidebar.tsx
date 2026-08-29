@@ -8,14 +8,12 @@ import {
   Divider,
   Group,
   Menu,
-  NavLink,
   ScrollArea,
   Stack,
   Text,
   ThemeIcon,
   Tooltip,
   UnstyledButton,
-  useComputedColorScheme,
 } from "@mantine/core";
 import {
   IconAward,
@@ -25,24 +23,29 @@ import {
   IconChevronRight,
   IconClock,
   IconCoin,
+  IconCreditCard,
   IconCrown,
   IconDashboard,
-  IconHash,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
+  IconNumbers,
   IconReceipt2,
   IconSettings,
+  IconShieldLock,
   IconSparkles,
   IconTicket,
   IconTransfer,
   IconTrophy,
+  IconUser,
+  IconUserCheck,
+  IconUserOff,
   IconUsers,
   IconWallet,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export interface NavSubItem {
@@ -108,9 +111,9 @@ const NAV_ITEMS: NavItem[] = [
         permission: "draw.view",
       },
       {
-        label: "Numbers",
+        label: "Numbers Matrix",
         href: "/draws/numbers",
-        icon: IconHash,
+        icon: IconNumbers,
         permission: "draw.view",
       },
     ],
@@ -118,8 +121,27 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: "Tickets",
     icon: IconTicket,
-    href: "/tickets",
     permission: "tickets.view",
+    subItems: [
+      {
+        label: "All Tickets",
+        href: "/tickets",
+        icon: IconTicket,
+        permission: "tickets.view",
+      },
+      {
+        label: "Active Tickets",
+        href: "/tickets/active",
+        icon: IconClock,
+        permission: "tickets.view",
+      },
+      {
+        label: "Winning Tickets",
+        href: "/tickets/winning",
+        icon: IconAward,
+        permission: "tickets.view",
+      },
+    ],
   },
   {
     label: "Results & Winners",
@@ -133,9 +155,21 @@ const NAV_ITEMS: NavItem[] = [
         permission: "result.view",
       },
       {
-        label: "Winners",
+        label: "Winners List",
         href: "/results/winners",
+        icon: IconTrophy,
+        permission: "result.view",
+      },
+      {
+        label: "Pending Verification",
+        href: "/results/pending",
         icon: IconCrown,
+        permission: "result.view",
+      },
+      {
+        label: "Publish Results",
+        href: "/results/publish",
+        icon: IconSparkles,
         permission: "result.view",
       },
     ],
@@ -146,13 +180,13 @@ const NAV_ITEMS: NavItem[] = [
     permission: "wallet.view",
     subItems: [
       {
-        label: "Wallets",
+        label: "Wallets Overview",
         href: "/finance/wallets",
         icon: IconWallet,
         permission: "wallet.view",
       },
       {
-        label: "Add Money Requests",
+        label: "Deposit Requests",
         href: "/finance/deposits",
         icon: IconCoin,
         permission: "deposit.view",
@@ -170,9 +204,15 @@ const NAV_ITEMS: NavItem[] = [
         permission: "transfer.view",
       },
       {
-        label: "Transactions",
-        href: "/finance/transactions",
+        label: "Ledger Transactions",
+        href: "/finance/ledger",
         icon: IconReceipt2,
+        permission: "wallet.view",
+      },
+      {
+        label: "Adjustments",
+        href: "/finance/adjustments",
+        icon: IconSparkles,
         permission: "wallet.view",
       },
     ],
@@ -180,14 +220,58 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: "Users",
     icon: IconUsers,
-    href: "/users",
     permission: "users.view",
+    subItems: [
+      {
+        label: "All Users",
+        href: "/users",
+        icon: IconUsers,
+        permission: "users.view",
+      },
+      {
+        label: "Active Users",
+        href: "/users/active",
+        icon: IconUserCheck,
+        permission: "users.view",
+      },
+      {
+        label: "Blocked Users",
+        href: "/users/blocked",
+        icon: IconUserOff,
+        permission: "users.view",
+      },
+    ],
   },
   {
     label: "Settings",
     icon: IconSettings,
-    href: "/settings",
     permission: "settings.manage",
+    subItems: [
+      {
+        label: "Payment Gateways",
+        href: "/settings/gateways",
+        icon: IconCreditCard,
+        permission: "settings.manage",
+      },
+      {
+        label: "General Settings",
+        href: "/settings/general",
+        icon: IconSettings,
+        permission: "settings.manage",
+      },
+      {
+        label: "Admin Profile",
+        href: "/settings/profile",
+        icon: IconUser,
+        permission: "settings.manage",
+      },
+      {
+        label: "Security & Keys",
+        href: "/settings/security",
+        icon: IconShieldLock,
+        permission: "settings.manage",
+      },
+    ],
   },
 ];
 
@@ -196,19 +280,17 @@ interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
-export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
+function SidebarInner({ isCollapsed, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname();
   const { hasPermission, hasRole } = useAuth();
-  const computedColorScheme = useComputedColorScheme("dark", {
-    getInitialValueInEffect: true,
-  });
-  const isDark = computedColorScheme === "dark";
 
-  // Expanded submenus state
   const [openedGroups, setOpenedGroups] = useState<Record<string, boolean>>({
     Draws: true,
-    Financial: true,
+    Tickets: true,
     "Results & Winners": true,
+    Financial: true,
+    Users: true,
+    Settings: true,
   });
 
   const toggleGroup = (groupLabel: string) => {
@@ -218,9 +300,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
     }));
   };
 
-  // Filter items according to permissions & roles
   const filteredNavItems = NAV_ITEMS.map((item) => {
-    // Check main item permission
     if (item.permission && !hasPermission(item.permission)) {
       return null;
     }
@@ -244,8 +324,10 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
 
   const isNavActive = (href?: string) => {
     if (!href) return false;
-    if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname === href || pathname.startsWith(`${href}/`);
+    if (href === "/dashboard") {
+      return pathname === "/dashboard" || pathname === "/";
+    }
+    return pathname === href;
   };
 
   const isGroupActive = (item: NavItem) => {
@@ -269,47 +351,41 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
           <Tooltip label="TRADEX Admin" position="right" withArrow>
             <Group justify="center">
               <ThemeIcon
-                size={38}
-                radius="md"
+                size={40}
+                radius="lg"
                 variant="gradient"
                 gradient={{ from: "#D97706", to: "#F59E0B", deg: 135 }}
                 style={{
-                  boxShadow: isDark
-                    ? "0 4px 12px rgba(217, 119, 6, 0.35)"
-                    : "0 4px 12px rgba(217, 119, 6, 0.2)",
+                  boxShadow: "var(--sidebar-shadow)",
                 }}
               >
-                <IconCrown size={22} stroke={1.75} color="#0A0F1D" />
+                <IconCrown size={22} stroke={2} color="#070B14" />
               </ThemeIcon>
             </Group>
           </Tooltip>
         ) : (
           <Group justify="space-between" px="xs">
-            <Group gap="xs">
+            <Group gap="sm">
               <ThemeIcon
-                size={36}
-                radius="md"
+                size={38}
+                radius="lg"
                 variant="gradient"
                 gradient={{ from: "#D97706", to: "#F59E0B", deg: 135 }}
                 style={{
-                  boxShadow: isDark
-                    ? "0 4px 12px rgba(217, 119, 6, 0.35)"
-                    : "0 4px 12px rgba(217, 119, 6, 0.2)",
+                  boxShadow: "var(--sidebar-shadow)",
                 }}
               >
-                <IconCrown size={20} stroke={2} color="#0A0F1D" />
+                <IconCrown size={22} stroke={2} color="#070B14" />
               </ThemeIcon>
               <Box>
                 <Group gap={6} align="center">
                   <Text
                     size="md"
-                    fw={800}
+                    fw={900}
                     lh={1}
                     style={{
                       letterSpacing: "0.5px",
-                      background: isDark
-                        ? "linear-gradient(135deg, #FDE68A 0%, #D97706 100%)"
-                        : "linear-gradient(135deg, #B45309 0%, #78350F 100%)",
+                      background: "var(--brand-title-gradient)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                     }}
@@ -318,11 +394,15 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                   </Text>
                   <Badge
                     size="xs"
-                    variant={isDark ? "outline" : "light"}
+                    variant="filled"
                     color="tradexGold"
-                    px={4}
-                    h={14}
-                    style={{ fontSize: "8px", fontWeight: 700 }}
+                    px={5}
+                    h={16}
+                    style={{
+                      fontSize: "9px",
+                      fontWeight: 800,
+                      color: "#070B14",
+                    }}
                   >
                     PRO
                   </Badge>
@@ -330,10 +410,11 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                 <Text
                   size="9px"
                   c="dimmed"
-                  fw={600}
-                  style={{ letterSpacing: "1px" }}
+                  fw={700}
+                  mt={2}
+                  style={{ letterSpacing: "1.2px" }}
                 >
-                  ADMIN CONSOLE
+                  ADMIN CENTER
                 </Text>
               </Box>
             </Group>
@@ -341,7 +422,11 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
         )}
       </Box>
 
-      <Divider />
+      <Divider
+        style={{
+          borderColor: "var(--surface-border)",
+        }}
+      />
 
       {/* Main Navigation Links */}
       <ScrollArea
@@ -367,8 +452,8 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                     key={item.label}
                     position="right-start"
                     withArrow
-                    shadow="md"
-                    width={200}
+                    shadow="xl"
+                    width={220}
                   >
                     <Menu.Target>
                       <Tooltip label={item.label} position="right" withArrow>
@@ -380,13 +465,19 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                           mx="auto"
                           styles={{
                             root: {
+                              position: "relative",
+                              backgroundColor: active
+                                ? "var(--brand-gold-bg-hover)"
+                                : undefined,
                               borderLeft: active
-                                ? `3px solid var(--mantine-color-tradexGold-${isDark ? "4" : "7"})`
+                                ? "3px solid var(--color-gold-500)"
                                 : "none",
+                              transition:
+                                "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                             },
                           }}
                         >
-                          <Icon size={20} stroke={1.75} />
+                          <Icon size={20} stroke={1.8} />
                         </ActionIcon>
                       </Tooltip>
                     </Menu.Target>
@@ -400,13 +491,12 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                             key={sub.label}
                             component={Link}
                             href={sub.href}
-                            leftSection={<SubIcon size={14} stroke={1.5} />}
+                            prefetch={true}
+                            leftSection={<SubIcon size={14} stroke={1.6} />}
                             style={{
-                              fontWeight: subActive ? 600 : 400,
+                              fontWeight: subActive ? 700 : 500,
                               color: subActive
-                                ? isDark
-                                  ? "var(--mantine-color-tradexGold-4)"
-                                  : "var(--mantine-color-tradexGold-8)"
+                                ? "var(--brand-gold-text)"
                                 : undefined,
                             }}
                           >
@@ -429,6 +519,7 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                   <ActionIcon
                     component={Link}
                     href={item.href || "#"}
+                    prefetch={true}
                     variant={active ? "light" : "subtle"}
                     color={active ? "tradexGold" : "gray"}
                     size={44}
@@ -436,13 +527,18 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                     mx="auto"
                     styles={{
                       root: {
+                        position: "relative",
+                        backgroundColor: active
+                          ? "var(--brand-gold-bg-hover)"
+                          : undefined,
                         borderLeft: active
-                          ? `3px solid var(--mantine-color-tradexGold-${isDark ? "4" : "7"})`
+                          ? "3px solid var(--color-gold-500)"
                           : "none",
+                        transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                       },
                     }}
                   >
-                    <Icon size={20} stroke={1.75} />
+                    <Icon size={20} stroke={1.8} />
                   </ActionIcon>
                 </Tooltip>
               );
@@ -459,39 +555,35 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                     w="100%"
                     p="xs"
                     style={{
-                      borderRadius: "8px",
+                      borderRadius: "10px",
                       backgroundColor: active
-                        ? isDark
-                          ? "rgba(217, 119, 6, 0.15)"
-                          : "rgba(217, 119, 6, 0.1)"
+                        ? "var(--brand-gold-bg)"
                         : "transparent",
-                      transition:
-                        "background-color 0.15s ease, color 0.15s ease",
+                      border: active
+                        ? "1px solid var(--brand-gold-border)"
+                        : "1px solid transparent",
+                      transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                     }}
                   >
                     <Group justify="space-between" wrap="nowrap">
                       <Group gap="xs" wrap="nowrap">
                         <Icon
                           size={18}
-                          stroke={1.75}
+                          stroke={1.8}
                           style={{
                             color: active
-                              ? isDark
-                                ? "var(--mantine-color-tradexGold-4)"
-                                : "var(--mantine-color-tradexGold-7)"
+                              ? "var(--brand-gold-text)"
                               : "var(--mantine-color-dimmed)",
                           }}
                         />
                         <Text
                           size="sm"
-                          fw={active ? 600 : 500}
-                          c={
-                            active
-                              ? isDark
-                                ? "tradexGold.4"
-                                : "tradexGold.8"
-                              : undefined
-                          }
+                          fw={active ? 700 : 500}
+                          style={{
+                            color: active
+                              ? "var(--brand-gold-text)"
+                              : "var(--mantine-color-text)",
+                          }}
                         >
                           {item.label}
                         </Text>
@@ -513,36 +605,42 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                   </UnstyledButton>
 
                   <Collapse expanded={isOpened}>
-                    <Stack gap={2} pl="lg" pt={4}>
+                    <Stack gap={2} pl="md" pt={4}>
                       {item.subItems.map((sub) => {
                         const subActive = isNavActive(sub.href);
                         const SubIcon = sub.icon || IconChevronRight;
                         return (
-                          <NavLink
+                          <Link
                             key={sub.label}
-                            component={Link}
                             href={sub.href}
-                            label={sub.label}
-                            leftSection={<SubIcon size={14} stroke={1.5} />}
-                            active={subActive}
-                            variant="light"
-                            color="tradexGold"
-                            styles={{
-                              root: {
-                                borderRadius: "6px",
-                                paddingLeft: "8px",
-                                paddingRight: "8px",
-                                height: "34px",
-                                fontSize: "13px",
-                                fontWeight: subActive ? 600 : 400,
+                            prefetch={true}
+                            style={{ textDecoration: "none" }}
+                          >
+                            <UnstyledButton
+                              w="100%"
+                              py={6}
+                              px={10}
+                              style={{
+                                borderRadius: "8px",
+                                backgroundColor: subActive
+                                  ? "var(--brand-gold-bg-hover)"
+                                  : "transparent",
                                 color: subActive
-                                  ? isDark
-                                    ? "var(--mantine-color-tradexGold-4)"
-                                    : "var(--mantine-color-tradexGold-8)"
-                                  : undefined,
-                              },
-                            }}
-                          />
+                                  ? "var(--brand-gold-text)"
+                                  : "var(--mantine-color-dimmed)",
+                                fontWeight: subActive ? 700 : 500,
+                                fontSize: "13px",
+                                transition: "all 0.15s ease",
+                              }}
+                            >
+                              <Group gap="xs" wrap="nowrap">
+                                <SubIcon size={14} stroke={1.6} />
+                                <Text size="13px" truncate>
+                                  {sub.label}
+                                </Text>
+                              </Group>
+                            </UnstyledButton>
+                          </Link>
                         );
                       })}
                     </Stack>
@@ -552,34 +650,49 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
             }
 
             return (
-              <NavLink
+              <Link
                 key={item.label}
-                component={Link}
                 href={item.href || "#"}
-                label={item.label}
-                leftSection={<Icon size={18} stroke={1.75} />}
-                active={active}
-                variant="light"
-                color="tradexGold"
-                styles={{
-                  root: {
-                    borderRadius: "8px",
-                    height: "38px",
-                    fontWeight: active ? 600 : 500,
+                prefetch={true}
+                style={{ textDecoration: "none" }}
+              >
+                <UnstyledButton
+                  w="100%"
+                  p="xs"
+                  style={{
+                    borderRadius: "10px",
+                    height: "40px",
+                    fontWeight: active ? 700 : 500,
+                    backgroundColor: active
+                      ? "var(--brand-gold-bg)"
+                      : "transparent",
+                    border: active
+                      ? "1px solid var(--brand-gold-border)"
+                      : "1px solid transparent",
                     color: active
-                      ? isDark
-                        ? "var(--mantine-color-tradexGold-4)"
-                        : "var(--mantine-color-tradexGold-8)"
-                      : undefined,
-                  },
-                }}
-              />
+                      ? "var(--brand-gold-text)"
+                      : "var(--mantine-color-text)",
+                    transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
+                >
+                  <Group gap="xs" wrap="nowrap">
+                    <Icon size={18} stroke={1.8} />
+                    <Text size="sm" fw={active ? 700 : 500}>
+                      {item.label}
+                    </Text>
+                  </Group>
+                </UnstyledButton>
+              </Link>
             );
           })}
         </Stack>
       </ScrollArea>
 
-      <Divider />
+      <Divider
+        style={{
+          borderColor: "var(--surface-border)",
+        }}
+      />
 
       {/* Bottom Footer: Sidebar Collapse Toggle & Status */}
       <Box pt={4}>
@@ -599,8 +712,13 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
           </Tooltip>
         ) : (
           <Group justify="space-between" px="xs">
-            <Text size="10px" c="dimmed" fw={600}>
-              TRADEX ADMIN v1.0
+            <Text
+              size="10px"
+              c="dimmed"
+              fw={700}
+              style={{ letterSpacing: "0.5px" }}
+            >
+              TRADEX v1.0 PRO
             </Text>
             <ActionIcon
               variant="subtle"
@@ -615,6 +733,14 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
         )}
       </Box>
     </Stack>
+  );
+}
+
+export function Sidebar(props: SidebarProps) {
+  return (
+    <Suspense fallback={null}>
+      <SidebarInner {...props} />
+    </Suspense>
   );
 }
 

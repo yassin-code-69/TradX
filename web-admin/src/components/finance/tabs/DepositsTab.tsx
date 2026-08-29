@@ -15,14 +15,17 @@ import {
   TextInput,
   Tooltip,
 } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import {
   IconCheck,
   IconCopy,
   IconEye,
+  IconReceipt2,
   IconSearch,
   IconX,
 } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { EmptyState } from "@/components/common/EmptyState";
 import { formatDateTime, getStatusColor } from "@/lib/formatters";
 import { useAdminStore } from "@/lib/store";
 import type { DepositItem } from "@/types";
@@ -33,10 +36,11 @@ import { RejectDepositModal } from "../RejectDepositModal";
 const PAGE_SIZE = 25;
 
 export function DepositsTab() {
-  const { deposits } = useAdminStore();
+  const deposits = useAdminStore((s) => s.deposits);
 
   // Search and filter states
   const [depositSearch, setDepositSearch] = useState("");
+  const [debouncedSearch] = useDebouncedValue(depositSearch, 250);
   const [depositStatusFilter, setDepositStatusFilter] = useState<string>("ALL");
   const [depositMethodFilter, setDepositMethodFilter] = useState<string>("ALL");
   const [page, setPage] = useState(1);
@@ -49,46 +53,60 @@ export function DepositsTab() {
   const [selectedRejectDeposit, setSelectedRejectDeposit] =
     useState<DepositItem | null>(null);
 
-  // Filtered Deposits
+  // Filtered Deposits with debounced search
   const filteredDeposits = useMemo(() => {
+    const q = debouncedSearch.toLowerCase().trim();
     return deposits.filter((dep) => {
-      const matchesSearch =
-        dep.providerTransactionId
-          .toLowerCase()
-          .includes(depositSearch.toLowerCase()) ||
-        dep.username.toLowerCase().includes(depositSearch.toLowerCase()) ||
-        dep.userFullName.toLowerCase().includes(depositSearch.toLowerCase()) ||
-        dep.senderAccount.includes(depositSearch);
+      if (q) {
+        const matchesSearch =
+          dep.providerTransactionId.toLowerCase().includes(q) ||
+          dep.username.toLowerCase().includes(q) ||
+          dep.userFullName.toLowerCase().includes(q) ||
+          dep.senderAccount.includes(q);
+        if (!matchesSearch) return false;
+      }
 
-      const matchesStatus =
-        depositStatusFilter === "ALL" || dep.status === depositStatusFilter;
+      if (depositStatusFilter !== "ALL" && dep.status !== depositStatusFilter)
+        return false;
 
-      const matchesMethod =
-        depositMethodFilter === "ALL" ||
-        dep.paymentMethod === depositMethodFilter;
+      if (
+        depositMethodFilter !== "ALL" &&
+        dep.paymentMethod !== depositMethodFilter
+      )
+        return false;
 
-      return matchesSearch && matchesStatus && matchesMethod;
+      return true;
     });
-  }, [deposits, depositSearch, depositStatusFilter, depositMethodFilter]);
-
-  // Reset page when filters change
-  useEffect(() => {
-    if (depositSearch || depositStatusFilter || depositMethodFilter) {
-      setPage(1);
-    } else {
-      setPage(1);
-    }
-  }, [depositSearch, depositStatusFilter, depositMethodFilter]);
+  }, [deposits, debouncedSearch, depositStatusFilter, depositMethodFilter]);
 
   const totalPages = Math.ceil(filteredDeposits.length / PAGE_SIZE) || 1;
+  const currentPage = Math.min(page, totalPages);
+
   const paginatedDeposits = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
     return filteredDeposits.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [filteredDeposits, page]);
+  }, [filteredDeposits, currentPage]);
+
+  const handleOpenReceipt = useCallback((dep: DepositItem) => {
+    setSelectedReceiptDeposit(dep);
+  }, []);
+
+  const handleOpenApprove = useCallback((dep: DepositItem) => {
+    setSelectedApproveDeposit(dep);
+  }, []);
+
+  const handleOpenReject = useCallback((dep: DepositItem) => {
+    setSelectedRejectDeposit(dep);
+  }, []);
 
   return (
     <>
-      <Card p="md" radius="md" withBorder bg="dark.8">
+      <Card
+        p="md"
+        radius="md"
+        withBorder
+        bg="var(--surface-card, var(--mantine-color-default))"
+      >
         <Stack gap="md">
           {/* Filter Controls */}
           <Group justify="space-between" wrap="wrap">
@@ -152,155 +170,23 @@ export function DepositsTab() {
               <Table.Tbody>
                 {paginatedDeposits.length === 0 ? (
                   <Table.Tr>
-                    <Table.Td colSpan={9} ta="center" py="xl">
-                      <Text size="sm" c="dimmed">
-                        No deposit requests found matching the current filters.
-                      </Text>
+                    <Table.Td colSpan={9} py="xl">
+                      <EmptyState
+                        icon={IconReceipt2}
+                        title="No Deposit Requests"
+                        description="No deposit records match your search or filter options."
+                      />
                     </Table.Td>
                   </Table.Tr>
                 ) : (
                   paginatedDeposits.map((dep) => (
-                    <Table.Tr key={dep.id}>
-                      <Table.Td>
-                        <Text size="xs" ff="monospace" fw={600} c="dimmed">
-                          #{dep.id}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" fw={600}>
-                          {dep.userFullName}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          @{dep.username}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge
-                          color={
-                            dep.paymentMethod === "bKash"
-                              ? "pink"
-                              : dep.paymentMethod === "Nagad"
-                                ? "orange"
-                                : dep.paymentMethod === "Rocket"
-                                  ? "grape"
-                                  : "blue"
-                          }
-                          size="sm"
-                        >
-                          {dep.paymentMethod}
-                        </Badge>
-                      </Table.Td>
-                      <Table.Td>
-                        <Group gap={4}>
-                          <Text size="sm" ff="monospace">
-                            {dep.senderAccount}
-                          </Text>
-                          <CopyButton value={dep.senderAccount} timeout={2000}>
-                            {({ copied, copy }) => (
-                              <Tooltip
-                                label={copied ? "Copied" : "Copy"}
-                                withArrow
-                              >
-                                <ActionIcon
-                                  color={copied ? "teal" : "gray"}
-                                  variant="subtle"
-                                  size="xs"
-                                  onClick={copy}
-                                >
-                                  {copied ? (
-                                    <IconCheck size={12} />
-                                  ) : (
-                                    <IconCopy size={12} />
-                                  )}
-                                </ActionIcon>
-                              </Tooltip>
-                            )}
-                          </CopyButton>
-                        </Group>
-                      </Table.Td>
-                      <Table.Td>
-                        <Group gap={4}>
-                          <Badge color="dark.4" ff="monospace" size="sm">
-                            {dep.providerTransactionId}
-                          </Badge>
-                          <CopyButton
-                            value={dep.providerTransactionId}
-                            timeout={2000}
-                          >
-                            {({ copied, copy }) => (
-                              <Tooltip
-                                label={copied ? "Copied" : "Copy"}
-                                withArrow
-                              >
-                                <ActionIcon
-                                  color={copied ? "teal" : "gray"}
-                                  variant="subtle"
-                                  size="xs"
-                                  onClick={copy}
-                                >
-                                  {copied ? (
-                                    <IconCheck size={12} />
-                                  ) : (
-                                    <IconCopy size={12} />
-                                  )}
-                                </ActionIcon>
-                              </Tooltip>
-                            )}
-                          </CopyButton>
-                        </Group>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" fw={800} c="emerald.4">
-                          {dep.formattedAmount}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="xs" c="dimmed">
-                          {formatDateTime(dep.submittedAt)}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge color={getStatusColor(dep.status)} size="sm">
-                          {dep.status}
-                        </Badge>
-                      </Table.Td>
-                      <Table.Td>
-                        <Group justify="flex-end" gap={6}>
-                          <Tooltip label="View Proof / Receipt">
-                            <ActionIcon
-                              size="sm"
-                              variant="light"
-                              color="gray"
-                              onClick={() => setSelectedReceiptDeposit(dep)}
-                            >
-                              <IconEye size={14} />
-                            </ActionIcon>
-                          </Tooltip>
-
-                          {dep.status === "PENDING" && (
-                            <>
-                              <Tooltip label="Reject Deposit">
-                                <ActionIcon
-                                  size="sm"
-                                  variant="light"
-                                  color="red"
-                                  onClick={() => setSelectedRejectDeposit(dep)}
-                                >
-                                  <IconX size={14} />
-                                </ActionIcon>
-                              </Tooltip>
-                              <Button
-                                size="xs"
-                                color="teal"
-                                onClick={() => setSelectedApproveDeposit(dep)}
-                              >
-                                Approve
-                              </Button>
-                            </>
-                          )}
-                        </Group>
-                      </Table.Td>
-                    </Table.Tr>
+                    <DepositTableRow
+                      key={dep.id}
+                      dep={dep}
+                      onReceipt={handleOpenReceipt}
+                      onApprove={handleOpenApprove}
+                      onReject={handleOpenReject}
+                    />
                   ))
                 )}
               </Table.Tbody>
@@ -331,25 +217,170 @@ export function DepositsTab() {
       </Card>
 
       {/* Modals */}
-      <DepositReceiptModal
-        opened={!!selectedReceiptDeposit}
-        onClose={() => setSelectedReceiptDeposit(null)}
-        deposit={selectedReceiptDeposit}
-        onApprove={(dep) => setSelectedApproveDeposit(dep)}
-        onReject={(dep) => setSelectedRejectDeposit(dep)}
-      />
+      {selectedReceiptDeposit && (
+        <DepositReceiptModal
+          opened={!!selectedReceiptDeposit}
+          onClose={() => setSelectedReceiptDeposit(null)}
+          deposit={selectedReceiptDeposit}
+          onApprove={(dep) => setSelectedApproveDeposit(dep)}
+          onReject={(dep) => setSelectedRejectDeposit(dep)}
+        />
+      )}
 
-      <ApproveDepositModal
-        opened={!!selectedApproveDeposit}
-        onClose={() => setSelectedApproveDeposit(null)}
-        deposit={selectedApproveDeposit}
-      />
+      {selectedApproveDeposit && (
+        <ApproveDepositModal
+          opened={!!selectedApproveDeposit}
+          onClose={() => setSelectedApproveDeposit(null)}
+          deposit={selectedApproveDeposit}
+        />
+      )}
 
-      <RejectDepositModal
-        opened={!!selectedRejectDeposit}
-        onClose={() => setSelectedRejectDeposit(null)}
-        deposit={selectedRejectDeposit}
-      />
+      {selectedRejectDeposit && (
+        <RejectDepositModal
+          opened={!!selectedRejectDeposit}
+          onClose={() => setSelectedRejectDeposit(null)}
+          deposit={selectedRejectDeposit}
+        />
+      )}
     </>
   );
 }
+
+// ==================== MEMOIZED DEPOSIT ROW ====================
+
+interface DepositTableRowProps {
+  dep: DepositItem;
+  onReceipt: (d: DepositItem) => void;
+  onApprove: (d: DepositItem) => void;
+  onReject: (d: DepositItem) => void;
+}
+
+const DepositTableRow = React.memo(function DepositTableRow({
+  dep,
+  onReceipt,
+  onApprove,
+  onReject,
+}: DepositTableRowProps) {
+  return (
+    <Table.Tr>
+      <Table.Td>
+        <Text size="xs" ff="monospace" fw={600} c="dimmed">
+          #{dep.id}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" fw={600}>
+          {dep.userFullName}
+        </Text>
+        <Text size="xs" c="dimmed">
+          @{dep.username}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge
+          color={
+            dep.paymentMethod === "bKash"
+              ? "pink"
+              : dep.paymentMethod === "Nagad"
+                ? "orange"
+                : dep.paymentMethod === "Rocket"
+                  ? "grape"
+                  : "blue"
+          }
+          size="sm"
+        >
+          {dep.paymentMethod}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Group gap={4}>
+          <Text size="sm" ff="monospace" className="font-tabular">
+            {dep.senderAccount}
+          </Text>
+          <CopyButton value={dep.senderAccount} timeout={2000}>
+            {({ copied, copy }) => (
+              <Tooltip label={copied ? "Copied" : "Copy"} withArrow>
+                <ActionIcon
+                  color={copied ? "teal" : "gray"}
+                  variant="subtle"
+                  size="xs"
+                  onClick={copy}
+                >
+                  {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </CopyButton>
+        </Group>
+      </Table.Td>
+      <Table.Td>
+        <Group gap={4}>
+          <Badge color="dark.4" ff="monospace" size="sm">
+            {dep.providerTransactionId}
+          </Badge>
+          <CopyButton value={dep.providerTransactionId} timeout={2000}>
+            {({ copied, copy }) => (
+              <Tooltip label={copied ? "Copied" : "Copy"} withArrow>
+                <ActionIcon
+                  color={copied ? "teal" : "gray"}
+                  variant="subtle"
+                  size="xs"
+                  onClick={copy}
+                >
+                  {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </CopyButton>
+        </Group>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" fw={800} c="emerald.4" className="font-tabular">
+          {dep.formattedAmount}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs" c="dimmed" className="font-tabular">
+          {formatDateTime(dep.submittedAt)}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge color={getStatusColor(dep.status)} size="sm">
+          {dep.status}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Group justify="flex-end" gap={6}>
+          <Tooltip label="View Proof / Receipt">
+            <ActionIcon
+              size="sm"
+              variant="light"
+              color="gray"
+              onClick={() => onReceipt(dep)}
+            >
+              <IconEye size={14} />
+            </ActionIcon>
+          </Tooltip>
+
+          {dep.status === "PENDING" && (
+            <>
+              <Tooltip label="Reject Deposit">
+                <ActionIcon
+                  size="sm"
+                  variant="light"
+                  color="red"
+                  onClick={() => onReject(dep)}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+              </Tooltip>
+              <Button size="xs" color="teal" onClick={() => onApprove(dep)}>
+                Approve
+              </Button>
+            </>
+          )}
+        </Group>
+      </Table.Td>
+    </Table.Tr>
+  );
+});

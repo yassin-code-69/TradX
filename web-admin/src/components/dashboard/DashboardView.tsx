@@ -20,7 +20,6 @@ import {
   IconArrowUpRight,
   IconBuildingBank,
   IconCheck,
-  IconClock,
   IconExternalLink,
   IconEye,
   IconReceipt2,
@@ -31,7 +30,9 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { EmptyState } from "@/components/common/EmptyState";
+import { LiveCountdown } from "@/components/common/LiveCountdown";
 import { ApproveDepositModal } from "@/components/finance/ApproveDepositModal";
 import { ApproveWithdrawalModal } from "@/components/finance/ApproveWithdrawalModal";
 import { DepositReceiptModal } from "@/components/finance/DepositReceiptModal";
@@ -40,30 +41,27 @@ import { RejectWithdrawalModal } from "@/components/finance/RejectWithdrawalModa
 import {
   formatDateTime,
   formatTimeAgo,
-  formatTimeRemaining,
   getStatusColor,
 } from "@/lib/formatters";
 import { useAdminStore } from "@/lib/store";
-import type { DepositItem, WithdrawalItem } from "@/types";
+import type {
+  ActiveDrawOverview,
+  DepositItem,
+  LedgerTransactionItem,
+  WithdrawalItem,
+} from "@/types";
 
 export function DashboardView() {
-  const { kpis, draws, deposits, withdrawals, ledgerTransactions } =
-    useAdminStore();
+  const kpis = useAdminStore((s) => s.kpis);
+  const draws = useAdminStore((s) => s.draws);
+  const deposits = useAdminStore((s) => s.deposits);
+  const withdrawals = useAdminStore((s) => s.withdrawals);
+  const ledgerTransactions = useAdminStore((s) => s.ledgerTransactions);
 
   const computedColorScheme = useComputedColorScheme("dark", {
     getInitialValueInEffect: true,
   });
   const isDark = computedColorScheme === "dark";
-
-  // State for live countdown ticker
-  const [_ticker, setTicker] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTicker((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Modal states
   const [selectedReceiptDeposit, setSelectedReceiptDeposit] =
@@ -77,13 +75,40 @@ export function DashboardView() {
   const [selectedRejectWithdrawal, setSelectedRejectWithdrawal] =
     useState<WithdrawalItem | null>(null);
 
-  const pendingDeposits = deposits
-    .filter((d) => d.status === "PENDING")
-    .slice(0, 4);
-  const pendingWithdrawals = withdrawals
-    .filter((w) => w.status === "PENDING")
-    .slice(0, 4);
-  const recentTransactions = ledgerTransactions.slice(0, 6);
+  const pendingDeposits = useMemo(
+    () => deposits.filter((d) => d.status === "PENDING").slice(0, 4),
+    [deposits],
+  );
+
+  const pendingWithdrawals = useMemo(
+    () => withdrawals.filter((w) => w.status === "PENDING").slice(0, 4),
+    [withdrawals],
+  );
+
+  const recentTransactions = useMemo(
+    () => ledgerTransactions.slice(0, 6),
+    [ledgerTransactions],
+  );
+
+  const handleOpenReceipt = useCallback((d: DepositItem) => {
+    setSelectedReceiptDeposit(d);
+  }, []);
+
+  const handleOpenApproveDeposit = useCallback((d: DepositItem) => {
+    setSelectedApproveDeposit(d);
+  }, []);
+
+  const handleOpenRejectDeposit = useCallback((d: DepositItem) => {
+    setSelectedRejectDeposit(d);
+  }, []);
+
+  const handleOpenApproveWithdrawal = useCallback((w: WithdrawalItem) => {
+    setSelectedApproveWithdrawal(w);
+  }, []);
+
+  const handleOpenRejectWithdrawal = useCallback((w: WithdrawalItem) => {
+    setSelectedRejectWithdrawal(w);
+  }, []);
 
   return (
     <Stack gap="xl">
@@ -133,7 +158,7 @@ export function DashboardView() {
           p="md"
           radius="md"
           withBorder
-          bg="var(--mantine-color-body)"
+          bg="var(--surface-card, var(--mantine-color-default))"
           className="glass-card-hover"
         >
           <Group justify="space-between" mb="xs">
@@ -162,7 +187,7 @@ export function DashboardView() {
           p="md"
           radius="md"
           withBorder
-          bg="var(--mantine-color-body)"
+          bg="var(--surface-card, var(--mantine-color-default))"
           className="glass-card-hover"
         >
           <Group justify="space-between" mb="xs">
@@ -186,7 +211,7 @@ export function DashboardView() {
           p="md"
           radius="md"
           withBorder
-          bg="var(--mantine-color-body)"
+          bg="var(--surface-card, var(--mantine-color-default))"
           className="glass-card-hover"
         >
           <Group justify="space-between" mb="xs">
@@ -210,10 +235,10 @@ export function DashboardView() {
           p="md"
           radius="md"
           withBorder
-          bg="var(--mantine-color-body)"
+          bg="var(--surface-card, var(--mantine-color-default))"
           className="glass-card-hover"
           component={Link}
-          href="/finance?tab=deposits"
+          href="/finance/deposits"
           style={{ textDecoration: "none" }}
         >
           <Group justify="space-between" mb="xs">
@@ -242,10 +267,10 @@ export function DashboardView() {
           p="md"
           radius="md"
           withBorder
-          bg="var(--mantine-color-body)"
+          bg="var(--surface-card, var(--mantine-color-default))"
           className="glass-card-hover"
           component={Link}
-          href="/finance?tab=withdrawals"
+          href="/finance/withdrawals"
           style={{ textDecoration: "none" }}
         >
           <Group justify="space-between" mb="xs">
@@ -274,7 +299,7 @@ export function DashboardView() {
           p="md"
           radius="md"
           withBorder
-          bg="var(--mantine-color-body)"
+          bg="var(--surface-card, var(--mantine-color-default))"
           className="glass-card-hover"
         >
           <Group justify="space-between" mb="xs">
@@ -310,126 +335,7 @@ export function DashboardView() {
 
         <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
           {draws.map((draw) => (
-            <Card
-              key={draw.id}
-              p="lg"
-              radius="md"
-              withBorder
-              bg="var(--mantine-color-body)"
-              style={{
-                borderLeft: `4px solid ${
-                  draw.type === "MEGA"
-                    ? isDark
-                      ? "#fad045"
-                      : "#d97706"
-                    : draw.type === "DAILY"
-                      ? "#20c997"
-                      : "#4c7cd9"
-                }`,
-              }}
-            >
-              <Stack gap="sm">
-                <Group justify="space-between" align="flex-start">
-                  <Stack gap={2}>
-                    <Group gap="xs">
-                      <Badge
-                        color={
-                          draw.type === "MEGA"
-                            ? "yellow"
-                            : draw.type === "DAILY"
-                              ? "teal"
-                              : "blue"
-                        }
-                        variant="filled"
-                        size="sm"
-                      >
-                        {draw.type}
-                      </Badge>
-                      <Text size="sm" fw={700} ff="monospace">
-                        #{draw.sequenceNumber}
-                      </Text>
-                    </Group>
-                    <Text size="md" fw={700}>
-                      {draw.name}
-                    </Text>
-                  </Stack>
-                  <Badge color="teal" variant="dot" size="md">
-                    {draw.status}
-                  </Badge>
-                </Group>
-
-                <Paper
-                  p="sm"
-                  radius="md"
-                  bg="var(--mantine-color-default)"
-                  withBorder
-                >
-                  <Group justify="space-between" align="center">
-                    <Stack gap={1}>
-                      <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                        Prize Jackpot
-                      </Text>
-                      <Text
-                        size="lg"
-                        fw={800}
-                        c={isDark ? "yellow.4" : "yellow.7"}
-                      >
-                        {draw.formattedJackpot}
-                      </Text>
-                    </Stack>
-                    <Stack gap={1} ta="right">
-                      <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                        Ticket Price
-                      </Text>
-                      <Text size="sm" fw={700}>
-                        {draw.formattedTicketPrice}
-                      </Text>
-                    </Stack>
-                  </Group>
-                </Paper>
-
-                <Group justify="space-between">
-                  <Group gap={6}>
-                    <IconClock
-                      size={16}
-                      color={isDark ? "#fad045" : "#d97706"}
-                    />
-                    <Text size="xs" c="dimmed">
-                      Closes in:
-                    </Text>
-                  </Group>
-                  <Text
-                    size="xs"
-                    fw={700}
-                    ff="monospace"
-                    c={isDark ? "yellow.3" : "yellow.8"}
-                  >
-                    {formatTimeRemaining(draw.saleClosesAt)}
-                  </Text>
-                </Group>
-
-                <Group justify="space-between">
-                  <Text size="xs" c="dimmed">
-                    Tickets Sold:
-                  </Text>
-                  <Text size="xs" fw={700}>
-                    {draw.ticketsSold.toLocaleString()} ({draw.digitLength}
-                    -digit)
-                  </Text>
-                </Group>
-
-                <Button
-                  component={Link}
-                  href={`/draws`}
-                  variant="subtle"
-                  size="xs"
-                  fullWidth
-                  rightSection={<IconExternalLink size={14} />}
-                >
-                  Manage Draw
-                </Button>
-              </Stack>
-            </Card>
+            <LiveDrawCard key={draw.id} draw={draw} isDark={isDark} />
           ))}
         </SimpleGrid>
       </Stack>
@@ -437,7 +343,12 @@ export function DashboardView() {
       {/* Row 3: Actionable Pending Queue Cards */}
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
         {/* Left: Pending Deposits Queue */}
-        <Card p="md" radius="md" withBorder bg="var(--mantine-color-body)">
+        <Card
+          p="md"
+          radius="md"
+          withBorder
+          bg="var(--surface-card, var(--mantine-color-default))"
+        >
           <Group justify="space-between" mb="md">
             <Group gap="xs">
               <IconArrowDownLeft
@@ -453,7 +364,7 @@ export function DashboardView() {
             </Group>
             <Button
               component={Link}
-              href="/finance?tab=deposits"
+              href="/finance/deposits"
               variant="subtle"
               size="xs"
               rightSection={<IconChevronRightSmall />}
@@ -463,110 +374,34 @@ export function DashboardView() {
           </Group>
 
           {pendingDeposits.length === 0 ? (
-            <Paper
-              p="xl"
-              withBorder
-              radius="md"
-              ta="center"
-              bg="var(--mantine-color-default)"
-            >
-              <IconCheck
-                size={32}
-                color="#20c997"
-                style={{ margin: "0 auto 8px" }}
-              />
-              <Text size="sm" fw={600}>
-                All clear!
-              </Text>
-              <Text size="xs" c="dimmed">
-                No pending manual deposits in queue.
-              </Text>
-            </Paper>
+            <EmptyState
+              icon={IconCheck}
+              title="All Clear!"
+              description="No pending manual deposits in queue."
+            />
           ) : (
             <Stack gap="xs">
               {pendingDeposits.map((deposit) => (
-                <Paper
+                <PendingDepositRow
                   key={deposit.id}
-                  p="sm"
-                  radius="md"
-                  withBorder
-                  bg="var(--mantine-color-default)"
-                  className="glass-card-hover"
-                >
-                  <Group justify="space-between" wrap="nowrap">
-                    <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                      <Group gap="xs">
-                        <Text size="sm" fw={700} truncate>
-                          {deposit.userFullName}
-                        </Text>
-                        <Badge color="gray" variant="light" size="xs">
-                          {deposit.paymentMethod}
-                        </Badge>
-                      </Group>
-                      <Group gap="xs">
-                        <Text size="xs" c="dimmed" ff="monospace">
-                          TrxID: {deposit.providerTransactionId}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          •
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {formatTimeAgo(deposit.submittedAt)}
-                        </Text>
-                      </Group>
-                    </Stack>
-
-                    <Stack gap={4} align="flex-end">
-                      <Text
-                        size="md"
-                        fw={800}
-                        c={isDark ? "emerald.4" : "emerald.7"}
-                      >
-                        {deposit.formattedAmount}
-                      </Text>
-                      <Group gap={6}>
-                        {deposit.proofImageUrl && (
-                          <Tooltip label="View Screenshot Proof">
-                            <ActionIcon
-                              size="sm"
-                              variant="light"
-                              color="gray"
-                              onClick={() => setSelectedReceiptDeposit(deposit)}
-                            >
-                              <IconEye size={14} />
-                            </ActionIcon>
-                          </Tooltip>
-                        )}
-                        <Tooltip label="Quick Reject">
-                          <ActionIcon
-                            size="sm"
-                            variant="light"
-                            color="red"
-                            onClick={() => setSelectedRejectDeposit(deposit)}
-                          >
-                            <IconX size={14} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Button
-                          size="xs"
-                          color="teal"
-                          px="xs"
-                          leftSection={<IconCheck size={14} />}
-                          onClick={() => setSelectedApproveDeposit(deposit)}
-                        >
-                          Approve
-                        </Button>
-                      </Group>
-                    </Stack>
-                  </Group>
-                </Paper>
+                  deposit={deposit}
+                  isDark={isDark}
+                  onReceipt={handleOpenReceipt}
+                  onApprove={handleOpenApproveDeposit}
+                  onReject={handleOpenRejectDeposit}
+                />
               ))}
             </Stack>
           )}
         </Card>
 
         {/* Right: Pending Withdrawals Queue */}
-        <Card p="md" radius="md" withBorder bg="var(--mantine-color-body)">
+        <Card
+          p="md"
+          radius="md"
+          withBorder
+          bg="var(--surface-card, var(--mantine-color-default))"
+        >
           <Group justify="space-between" mb="md">
             <Group gap="xs">
               <IconArrowUpRight
@@ -582,7 +417,7 @@ export function DashboardView() {
             </Group>
             <Button
               component={Link}
-              href="/finance?tab=withdrawals"
+              href="/finance/withdrawals"
               variant="subtle"
               size="xs"
               rightSection={<IconChevronRightSmall />}
@@ -592,100 +427,21 @@ export function DashboardView() {
           </Group>
 
           {pendingWithdrawals.length === 0 ? (
-            <Paper
-              p="xl"
-              withBorder
-              radius="md"
-              ta="center"
-              bg="var(--mantine-color-default)"
-            >
-              <IconCheck
-                size={32}
-                color="#20c997"
-                style={{ margin: "0 auto 8px" }}
-              />
-              <Text size="sm" fw={600}>
-                All clear!
-              </Text>
-              <Text size="xs" c="dimmed">
-                No pending user withdrawal requests.
-              </Text>
-            </Paper>
+            <EmptyState
+              icon={IconCheck}
+              title="All Clear!"
+              description="No pending user withdrawal requests in queue."
+            />
           ) : (
             <Stack gap="xs">
               {pendingWithdrawals.map((withdrawal) => (
-                <Paper
+                <PendingWithdrawalRow
                   key={withdrawal.id}
-                  p="sm"
-                  radius="md"
-                  withBorder
-                  bg="var(--mantine-color-default)"
-                  className="glass-card-hover"
-                >
-                  <Group justify="space-between" wrap="nowrap">
-                    <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                      <Group gap="xs">
-                        <Text size="sm" fw={700} truncate>
-                          {withdrawal.userFullName}
-                        </Text>
-                        <Badge color="blue" size="xs" variant="light">
-                          {withdrawal.paymentMethod}
-                        </Badge>
-                      </Group>
-                      <Group gap="xs">
-                        <Text
-                          size="xs"
-                          c={isDark ? "cyan.4" : "cyan.8"}
-                          ff="monospace"
-                        >
-                          To: {withdrawal.receiverAccount}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          •
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {formatTimeAgo(withdrawal.requestedAt)}
-                        </Text>
-                      </Group>
-                    </Stack>
-
-                    <Stack gap={4} align="flex-end">
-                      <Group gap={4} align="baseline">
-                        <Text size="xs" c="dimmed">
-                          Net:
-                        </Text>
-                        <Text size="md" fw={800}>
-                          {withdrawal.formattedNetAmount}
-                        </Text>
-                      </Group>
-                      <Group gap={6}>
-                        <Tooltip label="Reject & Refund">
-                          <ActionIcon
-                            size="sm"
-                            variant="light"
-                            color="red"
-                            onClick={() =>
-                              setSelectedRejectWithdrawal(withdrawal)
-                            }
-                          >
-                            <IconX size={14} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Button
-                          size="xs"
-                          color="teal"
-                          px="xs"
-                          leftSection={<IconCheck size={14} />}
-                          onClick={() =>
-                            setSelectedApproveWithdrawal(withdrawal)
-                          }
-                        >
-                          Approve Payout
-                        </Button>
-                      </Group>
-                    </Stack>
-                  </Group>
-                </Paper>
+                  withdrawal={withdrawal}
+                  isDark={isDark}
+                  onApprove={handleOpenApproveWithdrawal}
+                  onReject={handleOpenRejectWithdrawal}
+                />
               ))}
             </Stack>
           )}
@@ -693,7 +449,12 @@ export function DashboardView() {
       </SimpleGrid>
 
       {/* Row 4: Recent Financial Transactions Table */}
-      <Card p="md" radius="md" withBorder bg="var(--mantine-color-body)">
+      <Card
+        p="md"
+        radius="md"
+        withBorder
+        bg="var(--surface-card, var(--mantine-color-default))"
+      >
         <Group justify="space-between" mb="md">
           <Group gap="xs">
             <IconReceipt2 size={20} color={isDark ? "#638cdd" : "#3b5bdb"} />
@@ -703,7 +464,7 @@ export function DashboardView() {
           </Group>
           <Button
             component={Link}
-            href="/finance?tab=ledger"
+            href="/finance/ledger"
             variant="light"
             size="xs"
             rightSection={<IconExternalLink size={14} />}
@@ -727,66 +488,7 @@ export function DashboardView() {
             </Table.Thead>
             <Table.Tbody>
               {recentTransactions.map((tx) => (
-                <Table.Tr key={tx.id}>
-                  <Table.Td>
-                    <Text size="xs" ff="monospace" fw={600} c="dimmed">
-                      {tx.id}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" fw={600}>
-                      {tx.userFullName}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      @{tx.username}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge
-                      color={getTransactionTypeColor(tx.transactionType)}
-                      size="sm"
-                    >
-                      {tx.transactionType}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text
-                      size="sm"
-                      fw={700}
-                      c={
-                        tx.direction === "CREDIT"
-                          ? isDark
-                            ? "emerald.4"
-                            : "emerald.7"
-                          : isDark
-                            ? "red.4"
-                            : "red.7"
-                      }
-                    >
-                      {tx.direction === "CREDIT" ? "+" : "-"}{" "}
-                      {tx.formattedAmount}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge
-                      color={getStatusColor(tx.status)}
-                      size="xs"
-                      variant="light"
-                    >
-                      {tx.status}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="xs" c="dimmed">
-                      {formatDateTime(tx.createdAt)}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="xs" c="dimmed" lineClamp={1}>
-                      {tx.note || "-"}
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
+                <TransactionTableRow key={tx.id} tx={tx} isDark={isDark} />
               ))}
             </Table.Tbody>
           </Table>
@@ -794,40 +496,392 @@ export function DashboardView() {
       </Card>
 
       {/* Action Modals */}
-      <DepositReceiptModal
-        opened={!!selectedReceiptDeposit}
-        onClose={() => setSelectedReceiptDeposit(null)}
-        deposit={selectedReceiptDeposit}
-        onApprove={(dep) => setSelectedApproveDeposit(dep)}
-        onReject={(dep) => setSelectedRejectDeposit(dep)}
-      />
+      {selectedReceiptDeposit && (
+        <DepositReceiptModal
+          opened={!!selectedReceiptDeposit}
+          onClose={() => setSelectedReceiptDeposit(null)}
+          deposit={selectedReceiptDeposit}
+          onApprove={(dep) => setSelectedApproveDeposit(dep)}
+          onReject={(dep) => setSelectedRejectDeposit(dep)}
+        />
+      )}
 
-      <ApproveDepositModal
-        opened={!!selectedApproveDeposit}
-        onClose={() => setSelectedApproveDeposit(null)}
-        deposit={selectedApproveDeposit}
-      />
+      {selectedApproveDeposit && (
+        <ApproveDepositModal
+          opened={!!selectedApproveDeposit}
+          onClose={() => setSelectedApproveDeposit(null)}
+          deposit={selectedApproveDeposit}
+        />
+      )}
 
-      <RejectDepositModal
-        opened={!!selectedRejectDeposit}
-        onClose={() => setSelectedRejectDeposit(null)}
-        deposit={selectedRejectDeposit}
-      />
+      {selectedRejectDeposit && (
+        <RejectDepositModal
+          opened={!!selectedRejectDeposit}
+          onClose={() => setSelectedRejectDeposit(null)}
+          deposit={selectedRejectDeposit}
+        />
+      )}
 
-      <ApproveWithdrawalModal
-        opened={!!selectedApproveWithdrawal}
-        onClose={() => setSelectedApproveWithdrawal(null)}
-        withdrawal={selectedApproveWithdrawal}
-      />
+      {selectedApproveWithdrawal && (
+        <ApproveWithdrawalModal
+          opened={!!selectedApproveWithdrawal}
+          onClose={() => setSelectedApproveWithdrawal(null)}
+          withdrawal={selectedApproveWithdrawal}
+        />
+      )}
 
-      <RejectWithdrawalModal
-        opened={!!selectedRejectWithdrawal}
-        onClose={() => setSelectedRejectWithdrawal(null)}
-        withdrawal={selectedRejectWithdrawal}
-      />
+      {selectedRejectWithdrawal && (
+        <RejectWithdrawalModal
+          opened={!!selectedRejectWithdrawal}
+          onClose={() => setSelectedRejectWithdrawal(null)}
+          withdrawal={selectedRejectWithdrawal}
+        />
+      )}
     </Stack>
   );
 }
+
+// ==================== MEMOIZED SUBCOMPONENTS ====================
+
+interface LiveDrawCardProps {
+  draw: ActiveDrawOverview;
+  isDark: boolean;
+}
+
+const LiveDrawCard = React.memo(function LiveDrawCard({
+  draw,
+  isDark,
+}: LiveDrawCardProps) {
+  const borderColor =
+    draw.type === "MEGA"
+      ? isDark
+        ? "#fad045"
+        : "#d97706"
+      : draw.type === "DAILY"
+        ? "#20c997"
+        : "#4c7cd9";
+
+  return (
+    <Card
+      p="lg"
+      radius="md"
+      withBorder
+      bg="var(--surface-card, var(--mantine-color-default))"
+      style={{
+        borderLeft: `4px solid ${borderColor}`,
+      }}
+    >
+      <Stack gap="sm">
+        <Group justify="space-between" align="flex-start">
+          <Stack gap={2}>
+            <Group gap="xs">
+              <Badge
+                color={
+                  draw.type === "MEGA"
+                    ? "yellow"
+                    : draw.type === "DAILY"
+                      ? "teal"
+                      : "blue"
+                }
+                variant="filled"
+                size="sm"
+              >
+                {draw.type}
+              </Badge>
+              <Text size="sm" fw={700} ff="monospace">
+                #{draw.sequenceNumber}
+              </Text>
+            </Group>
+            <Text size="md" fw={700}>
+              {draw.name}
+            </Text>
+          </Stack>
+          <Badge color="teal" variant="dot" size="md">
+            {draw.status}
+          </Badge>
+        </Group>
+
+        <Paper p="sm" radius="md" bg="var(--mantine-color-default)" withBorder>
+          <Group justify="space-between" align="center">
+            <Stack gap={1}>
+              <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
+                Prize Jackpot
+              </Text>
+              <Text size="lg" fw={800} c={isDark ? "yellow.4" : "yellow.7"}>
+                {draw.formattedJackpot}
+              </Text>
+            </Stack>
+            <Stack gap={1} ta="right">
+              <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
+                Ticket Price
+              </Text>
+              <Text size="sm" fw={700}>
+                {draw.formattedTicketPrice}
+              </Text>
+            </Stack>
+          </Group>
+        </Paper>
+
+        {/* Isolated live countdown */}
+        <LiveCountdown targetDate={draw.saleClosesAt} />
+
+        <Group justify="space-between">
+          <Text size="xs" c="dimmed">
+            Tickets Sold:
+          </Text>
+          <Text size="xs" fw={700}>
+            {draw.ticketsSold.toLocaleString()} ({draw.digitLength}-digit)
+          </Text>
+        </Group>
+
+        <Button
+          component={Link}
+          href="/draws"
+          variant="subtle"
+          size="xs"
+          fullWidth
+          rightSection={<IconExternalLink size={14} />}
+        >
+          Manage Draw
+        </Button>
+      </Stack>
+    </Card>
+  );
+});
+
+interface PendingDepositRowProps {
+  deposit: DepositItem;
+  isDark: boolean;
+  onReceipt: (d: DepositItem) => void;
+  onApprove: (d: DepositItem) => void;
+  onReject: (d: DepositItem) => void;
+}
+
+const PendingDepositRow = React.memo(function PendingDepositRow({
+  deposit,
+  isDark,
+  onReceipt,
+  onApprove,
+  onReject,
+}: PendingDepositRowProps) {
+  return (
+    <Paper
+      p="sm"
+      radius="md"
+      withBorder
+      bg="var(--mantine-color-default)"
+      className="glass-card-hover"
+    >
+      <Group justify="space-between" wrap="nowrap">
+        <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+          <Group gap="xs">
+            <Text size="sm" fw={700} truncate>
+              {deposit.userFullName}
+            </Text>
+            <Badge color="gray" variant="light" size="xs">
+              {deposit.paymentMethod}
+            </Badge>
+          </Group>
+          <Group gap="xs">
+            <Text size="xs" c="dimmed" ff="monospace">
+              TrxID: {deposit.providerTransactionId}
+            </Text>
+            <Text size="xs" c="dimmed">
+              •
+            </Text>
+            <Text size="xs" c="dimmed">
+              {formatTimeAgo(deposit.submittedAt)}
+            </Text>
+          </Group>
+        </Stack>
+
+        <Stack gap={4} align="flex-end">
+          <Text size="md" fw={800} c={isDark ? "emerald.4" : "emerald.7"}>
+            {deposit.formattedAmount}
+          </Text>
+          <Group gap={6}>
+            {deposit.proofImageUrl && (
+              <Tooltip label="View Screenshot Proof">
+                <ActionIcon
+                  size="sm"
+                  variant="light"
+                  color="gray"
+                  onClick={() => onReceipt(deposit)}
+                >
+                  <IconEye size={14} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+            <Tooltip label="Quick Reject">
+              <ActionIcon
+                size="sm"
+                variant="light"
+                color="red"
+                onClick={() => onReject(deposit)}
+              >
+                <IconX size={14} />
+              </ActionIcon>
+            </Tooltip>
+            <Button
+              size="xs"
+              color="teal"
+              px="xs"
+              leftSection={<IconCheck size={14} />}
+              onClick={() => onApprove(deposit)}
+            >
+              Approve
+            </Button>
+          </Group>
+        </Stack>
+      </Group>
+    </Paper>
+  );
+});
+
+interface PendingWithdrawalRowProps {
+  withdrawal: WithdrawalItem;
+  isDark: boolean;
+  onApprove: (w: WithdrawalItem) => void;
+  onReject: (w: WithdrawalItem) => void;
+}
+
+const PendingWithdrawalRow = React.memo(function PendingWithdrawalRow({
+  withdrawal,
+  isDark,
+  onApprove,
+  onReject,
+}: PendingWithdrawalRowProps) {
+  return (
+    <Paper
+      p="sm"
+      radius="md"
+      withBorder
+      bg="var(--mantine-color-default)"
+      className="glass-card-hover"
+    >
+      <Group justify="space-between" wrap="nowrap">
+        <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+          <Group gap="xs">
+            <Text size="sm" fw={700} truncate>
+              {withdrawal.userFullName}
+            </Text>
+            <Badge color="blue" size="xs" variant="light">
+              {withdrawal.paymentMethod}
+            </Badge>
+          </Group>
+          <Group gap="xs">
+            <Text size="xs" c={isDark ? "cyan.4" : "cyan.8"} ff="monospace">
+              To: {withdrawal.receiverAccount}
+            </Text>
+            <Text size="xs" c="dimmed">
+              •
+            </Text>
+            <Text size="xs" c="dimmed">
+              {formatTimeAgo(withdrawal.requestedAt)}
+            </Text>
+          </Group>
+        </Stack>
+
+        <Stack gap={4} align="flex-end">
+          <Group gap={4} align="baseline">
+            <Text size="xs" c="dimmed">
+              Net:
+            </Text>
+            <Text size="md" fw={800}>
+              {withdrawal.formattedNetAmount}
+            </Text>
+          </Group>
+          <Group gap={6}>
+            <Tooltip label="Reject & Refund">
+              <ActionIcon
+                size="sm"
+                variant="light"
+                color="red"
+                onClick={() => onReject(withdrawal)}
+              >
+                <IconX size={14} />
+              </ActionIcon>
+            </Tooltip>
+            <Button
+              size="xs"
+              color="teal"
+              px="xs"
+              leftSection={<IconCheck size={14} />}
+              onClick={() => onApprove(withdrawal)}
+            >
+              Approve Payout
+            </Button>
+          </Group>
+        </Stack>
+      </Group>
+    </Paper>
+  );
+});
+
+interface TransactionTableRowProps {
+  tx: LedgerTransactionItem;
+  isDark: boolean;
+}
+
+const TransactionTableRow = React.memo(function TransactionTableRow({
+  tx,
+  isDark,
+}: TransactionTableRowProps) {
+  return (
+    <Table.Tr>
+      <Table.Td>
+        <Text size="xs" ff="monospace" fw={600} c="dimmed">
+          {tx.id}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" fw={600}>
+          {tx.userFullName}
+        </Text>
+        <Text size="xs" c="dimmed">
+          @{tx.username}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge color={getTransactionTypeColor(tx.transactionType)} size="sm">
+          {tx.transactionType}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text
+          size="sm"
+          fw={700}
+          c={
+            tx.direction === "CREDIT"
+              ? isDark
+                ? "emerald.4"
+                : "emerald.7"
+              : isDark
+                ? "red.4"
+                : "red.7"
+          }
+        >
+          {tx.direction === "CREDIT" ? "+" : "-"} {tx.formattedAmount}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Badge color={getStatusColor(tx.status)} size="xs" variant="light">
+          {tx.status}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs" c="dimmed">
+          {formatDateTime(tx.createdAt)}
+        </Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs" c="dimmed" lineClamp={1}>
+          {tx.note || "-"}
+        </Text>
+      </Table.Td>
+    </Table.Tr>
+  );
+});
 
 function IconChevronRightSmall() {
   return (

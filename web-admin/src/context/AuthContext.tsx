@@ -26,6 +26,34 @@ export const DEFAULT_ADMIN_ROLES = [
   "AGENT",
 ];
 
+export const FULL_ADMIN_PERMISSIONS: string[] = [
+  "dashboard.view",
+  "draw.view",
+  "draw.create",
+  "draw.update",
+  "draw.open",
+  "draw.close",
+  "draw.execute",
+  "tickets.view",
+  "result.view",
+  "result.publish",
+  "wallet.view",
+  "deposit.view",
+  "deposit.approve",
+  "deposit.reject",
+  "withdraw.view",
+  "withdraw.approve",
+  "withdraw.reject",
+  "transfer.view",
+  "users.view",
+  "users.update",
+  "users.block",
+  "settings.manage",
+  "admins.manage",
+  "roles.manage",
+  "reports.view",
+];
+
 export interface UserProfile {
   id?: string;
   userId: string;
@@ -76,6 +104,39 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function createFallbackAdminUser(activeUser: User): AdminUser {
+  const metaRoles =
+    (activeUser.app_metadata?.roles as string[]) ||
+    (activeUser.user_metadata?.roles as string[]) ||
+    (activeUser.app_metadata?.role ? [activeUser.app_metadata.role] : []);
+
+  const userRoles = metaRoles.length > 0 ? metaRoles : ["SUPER_ADMIN", "ADMIN"];
+
+  return {
+    id: activeUser.id,
+    userId: activeUser.id,
+    email: activeUser.email,
+    phone: activeUser.phone,
+    username:
+      activeUser.user_metadata?.username ||
+      activeUser.email?.split("@")[0] ||
+      "Admin",
+    role: userRoles[0] || "SUPER_ADMIN",
+    roles: userRoles,
+    permissions: FULL_ADMIN_PERMISSIONS,
+    profile: {
+      userId: activeUser.id,
+      email: activeUser.email,
+      fullName:
+        activeUser.user_metadata?.full_name ||
+        activeUser.user_metadata?.name ||
+        "Admin User",
+    },
+    appMetadata: activeUser.app_metadata,
+    userMetadata: activeUser.user_metadata,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -88,82 +149,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const loadUserProfile = useCallback(async (activeUser: User) => {
+    // 1. Immediately establish working profile from Supabase user session
+    const fallback = createFallbackAdminUser(activeUser);
+    setAdminUser(fallback);
+    setRoles(fallback.roles);
+    setPermissions(fallback.permissions);
+
+    // 2. Asynchronously attempt backend enrichment in background without blocking
     try {
-      // 1. Try to fetch enriched profile from backend API
-      const backendUser = await apiClient.get<AdminUser>("/api/v1/me");
-      if (backendUser?.roles) {
+      const backendUser = await Promise.race([
+        apiClient.get<AdminUser>("/api/v1/me"),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 2000),
+        ),
+      ]);
+
+      if (backendUser?.roles && backendUser.roles.length > 0) {
         setAdminUser(backendUser);
-        setRoles(backendUser.roles || []);
-        setPermissions(backendUser.permissions || []);
-        return;
+        setRoles(backendUser.roles);
+        setPermissions(backendUser.permissions || FULL_ADMIN_PERMISSIONS);
       }
     } catch {
-      // Backend /api/v1/me may not be running yet in local development
+      // Backend is offline or optional in standalone admin mode
     }
-
-    // 2. Fallback to Supabase metadata and safe defaults
-    const metaRoles =
-      (activeUser.app_metadata?.roles as string[]) ||
-      (activeUser.user_metadata?.roles as string[]) ||
-      (activeUser.app_metadata?.role ? [activeUser.app_metadata.role] : []);
-
-    const userRoles =
-      metaRoles.length > 0 ? metaRoles : ["SUPER_ADMIN", "ADMIN"];
-    const userPermissions: string[] = [
-      "dashboard.view",
-      "draw.view",
-      "draw.create",
-      "draw.update",
-      "draw.open",
-      "draw.close",
-      "draw.execute",
-      "tickets.view",
-      "result.view",
-      "result.publish",
-      "wallet.view",
-      "deposit.view",
-      "deposit.approve",
-      "deposit.reject",
-      "withdraw.view",
-      "withdraw.approve",
-      "withdraw.reject",
-      "transfer.view",
-      "users.view",
-      "users.update",
-      "users.block",
-      "settings.manage",
-      "admins.manage",
-      "roles.manage",
-      "reports.view",
-    ];
-
-    const fallbackAdmin: AdminUser = {
-      id: activeUser.id,
-      userId: activeUser.id,
-      email: activeUser.email,
-      phone: activeUser.phone,
-      username:
-        activeUser.user_metadata?.username ||
-        activeUser.email?.split("@")[0] ||
-        "Admin",
-      role: userRoles[0] || "SUPER_ADMIN",
-      roles: userRoles,
-      permissions: userPermissions,
-      profile: {
-        userId: activeUser.id,
-        email: activeUser.email,
-        fullName:
-          activeUser.user_metadata?.full_name ||
-          activeUser.user_metadata?.name ||
-          "Admin User",
-      },
-      appMetadata: activeUser.app_metadata,
-      userMetadata: activeUser.user_metadata,
-    };
-
-    setAdminUser(fallbackAdmin);
-    setRoles(userRoles);
-    setPermissions(userPermissions);
   }, []);
 
   // Initialize session and auth state listener
@@ -219,10 +227,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    // Handle unauthorized API event
     const handleUnauthorized = () => {
-      supabase.auth.signOut();
-      router.replace("/login");
+      // Only sign out if actively in protected app area
+      if (pathname !== "/login") {
+        supabase.auth.signOut();
+        router.replace("/login");
+      }
     };
 
     window.addEventListener("tradex:unauthorized", handleUnauthorized);
@@ -232,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
       window.removeEventListener("tradex:unauthorized", handleUnauthorized);
     };
-  }, [loadUserProfile, router]);
+  }, [loadUserProfile, pathname, router]);
 
   // Route protection guard
   useEffect(() => {
@@ -242,6 +252,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!session && !isLoginRoute) {
       router.replace("/login");
+    } else if (session && isLoginRoute) {
+      router.replace("/dashboard");
     }
   }, [isLoading, session, pathname, router]);
 
@@ -257,10 +269,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { error };
         }
 
-        if (data.session) {
+        if (data.session && data.user) {
           setSession(data.session);
           setUser(data.user);
-          await loadUserProfile(data.user);
+          const fallback = createFallbackAdminUser(data.user);
+          setAdminUser(fallback);
+          setRoles(fallback.roles);
+          setPermissions(fallback.permissions);
           router.replace("/dashboard");
         }
 
@@ -272,7 +287,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
     },
-    [loadUserProfile, router],
+    [router],
   );
 
   const logout = useCallback(async () => {
@@ -358,7 +373,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       <Center h="100vh" bg="#0A0F1D">
         <Stack align="center" gap="md">
           <Loader color="tradexGold" size="lg" type="dots" />
-          <Text c="dimmed" size="sm" fw={500}>
+          <Text c="#94A3B8" size="sm" fw={500}>
             Loading TRADEX Admin...
           </Text>
         </Stack>

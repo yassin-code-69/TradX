@@ -6,6 +6,8 @@ import { Notifications } from "@mantine/notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type React from "react";
 import { useState } from "react";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { TopProgressBar } from "@/components/common/TopProgressBar";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { AuthProvider } from "@/context/AuthContext";
 import { theme } from "@/theme";
@@ -31,10 +33,13 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <MantineProvider theme={theme} defaultColorScheme="dark">
+        <TopProgressBar />
+        <Notifications position="top-right" zIndex={2000} autoClose={4000} />
         <ModalsProvider>
-          <Notifications position="top-right" zIndex={2000} />
           <AuthProvider>
-            <AdminShell>{children}</AdminShell>
+            <AdminShell>
+              <ErrorBoundary>{children}</ErrorBoundary>
+            </AdminShell>
           </AuthProvider>
         </ModalsProvider>
       </MantineProvider>

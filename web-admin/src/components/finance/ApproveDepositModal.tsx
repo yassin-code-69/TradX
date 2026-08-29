@@ -30,7 +30,7 @@ export function ApproveDepositModal({
   deposit,
 }: ApproveDepositModalProps) {
   const approveDepositMutation = useApproveDeposit();
-  const { approveDeposit } = useAdminStore();
+  const approveDeposit = useAdminStore((s) => s.approveDeposit);
   const [adminNote, setAdminNote] = useState("");
 
   if (!deposit) return null;
@@ -71,8 +71,8 @@ export function ApproveDepositModal({
       onClose={onClose}
       title={
         <Group gap="xs">
-          <IconCheck size={20} color="#20c997" />
-          <Text fw={700} size="md">
+          <IconCheck size={20} color="#10B981" />
+          <Text fw={800} size="md">
             Approve Manual Deposit
           </Text>
         </Group>
@@ -92,26 +92,26 @@ export function ApproveDepositModal({
           available wallet balance and record a ledger transaction.
         </Alert>
 
-        <Paper p="md" radius="md" withBorder bg="dark.8">
+        <Paper p="md" radius="lg" withBorder>
           <Stack gap="xs">
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 User Account:
               </Text>
-              <Text size="sm" fw={600}>
+              <Text size="sm" fw={700}>
                 {deposit.userFullName} (@{deposit.username})
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Deposit Amount:
               </Text>
-              <Text size="md" fw={700} c="emerald.4">
+              <Text size="md" fw={900} c="emerald.4" className="font-tabular">
                 {deposit.formattedAmount}
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Payment Method:
               </Text>
               <Text size="sm" fw={600}>
@@ -119,18 +119,18 @@ export function ApproveDepositModal({
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Sender Account:
               </Text>
-              <Text size="sm" ff="monospace">
+              <Text size="sm" ff="monospace" fw={600}>
                 {deposit.senderAccount}
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Transaction ID (TrxID):
               </Text>
-              <Text size="sm" ff="monospace" fw={600}>
+              <Text size="sm" ff="monospace" fw={700} c="tradexGold.4">
                 {deposit.providerTransactionId}
               </Text>
             </Group>

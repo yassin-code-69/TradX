@@ -1,12 +1,80 @@
 import type { Context, Next } from 'hono';
 import jwt from 'jsonwebtoken';
-import { supabaseAdmin, query } from '../db/client.ts';
+import { supabaseAdmin, supabaseAnon, query } from '../db/client.ts';
 import { config } from '../config/index.ts';
 import { UnauthorizedError, ForbiddenError } from '../utils/response.ts';
 import type { AuthUser, UserProfile } from '../types/auth.ts';
 
 // Ensure Hono context typing is registered
 export * from '../types/auth.ts';
+
+/**
+ * Standard deterministic role permissions mapping
+ */
+const ROLE_PERMISSIONS_MAP: Record<string, string[]> = {
+  SUPER_ADMIN: [
+    'dashboard.view',
+    'users.view', 'users.manage', 'users.block', 'kyc.view', 'kyc.review',
+    'deposits.view', 'deposits.approve', 'deposits.reject',
+    'withdrawals.view', 'withdrawals.approve', 'withdrawals.reject',
+    'wallet.view', 'wallet.adjust', 'wallet.transfer',
+    'draws.view', 'draws.create', 'draws.manage', 'draws.execute', 'draws.open', 'draws.close',
+    'tickets.view', 'tickets.purchase',
+    'results.view', 'results.publish', 'winners.view', 'winners.process',
+    'settings.view', 'settings.manage', 'admins.manage', 'roles.manage',
+    'audit.view', 'reports.view'
+  ],
+  ADMIN: [
+    'dashboard.view',
+    'users.view', 'users.manage', 'users.block', 'kyc.view', 'kyc.review',
+    'deposits.view', 'deposits.approve', 'deposits.reject',
+    'withdrawals.view', 'withdrawals.approve', 'withdrawals.reject',
+    'wallet.view', 'wallet.adjust',
+    'draws.view', 'draws.create', 'draws.manage', 'tickets.view',
+    'results.view', 'winners.view', 'settings.view', 'audit.view', 'reports.view'
+  ],
+  FINANCE_ADMIN: [
+    'dashboard.view',
+    'deposits.view', 'deposits.approve', 'deposits.reject',
+    'withdrawals.view', 'withdrawals.approve', 'withdrawals.reject',
+    'wallet.view', 'wallet.adjust', 'reports.view', 'audit.view',
+    'settings.view', 'settings.manage'
+  ],
+  DRAW_MANAGER: [
+    'draws.view', 'draws.create', 'draws.manage', 'draws.execute',
+    'tickets.view', 'results.view', 'results.publish', 'winners.view', 'winners.process'
+  ],
+  SUPPORT: [
+    'users.view', 'kyc.view', 'kyc.review', 'tickets.view', 'deposits.view', 'withdrawals.view'
+  ],
+  AGENT: [
+    'wallet.transfer', 'tickets.purchase', 'draws.view', 'tickets.view', 'results.view'
+  ],
+  CUSTOMER: [
+    'tickets.purchase', 'wallet.transfer', 'draws.view', 'tickets.view', 'results.view'
+  ],
+  USER: [
+    'tickets.purchase', 'wallet.transfer', 'draws.view', 'tickets.view', 'results.view'
+  ]
+};
+
+export function resolveRolePermissions(roles: string[]): string[] {
+  const permSet = new Set<string>();
+  for (const role of roles) {
+    const perms = ROLE_PERMISSIONS_MAP[role] || [];
+    for (const p of perms) {
+      permSet.add(p);
+    }
+  }
+  if (roles.includes('SUPER_ADMIN')) {
+    for (const perms of Object.values(ROLE_PERMISSIONS_MAP)) {
+      for (const p of perms) {
+        permSet.add(p);
+      }
+    }
+  }
+  return Array.from(permSet);
+}
 
 /**
  * Helper to fetch user profile, roles, and permissions from DB
@@ -17,60 +85,112 @@ async function fetchUserProfileAndPermissions(userId: string): Promise<{
   permissions: string[];
 }> {
   try {
-    // 1. Fetch Profile
-    const profileRes = await query<any>(
-      `SELECT 
-        user_id as "userId",
-        public_id as "publicId",
-        username,
-        full_name as "fullName",
-        phone,
-        email,
-        avatar_asset_id as "avatarAssetId",
-        status,
-        kyc_status as "kycStatus",
-        referral_code as "referralCode",
-        referred_by as "referredBy",
-        created_at as "createdAt",
-        updated_at as "updatedAt"
-       FROM profiles 
-       WHERE user_id = $1 
-       LIMIT 1`,
-      [userId]
-    );
-
-    const profile: UserProfile | null = profileRes.rows[0] || null;
-
-    // 2. Fetch User Roles
-    const rolesRes = await query<{ code: string }>(
-      `SELECT r.code
-       FROM user_roles ur
-       JOIN roles r ON ur.role_id = r.id
-       WHERE ur.user_id = $1`,
-      [userId]
-    );
-
-    let roles = rolesRes.rows.map((row) => row.code);
-    if (roles.length === 0) {
-      roles = ['USER'];
+    // 1. Fetch Profile (handling multiple schema variants: user_id, auth_user_id, id)
+    let profile: UserProfile | null = null;
+    try {
+      const profileRes = await query<any>(
+        `SELECT 
+          id,
+          COALESCE(auth_user_id, id) as "userId",
+          COALESCE(public_id::text, id) as "publicId",
+          COALESCE(username, email) as "username",
+          COALESCE(full_name, name) as "fullName",
+          phone,
+          email,
+          avatar_asset_id as "avatarAssetId",
+          avatar_url as "avatarUrl",
+          status,
+          kyc_status as "kycStatus",
+          referral_code as "referralCode",
+          referred_by as "referredBy",
+          is_admin as "isAdmin",
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+         FROM profiles 
+         WHERE auth_user_id = $1 OR id = $1
+         LIMIT 1`,
+        [userId]
+      );
+      if (profileRes.rows.length > 0) {
+        profile = profileRes.rows[0];
+      }
+    } catch {
+      // Try fallback query with user_id column if auth_user_id does not exist
+      try {
+        const fallbackRes = await query<any>(
+          `SELECT 
+            user_id as "userId",
+            public_id as "publicId",
+            username,
+            full_name as "fullName",
+            phone,
+            email,
+            status,
+            kyc_status as "kycStatus",
+            created_at as "createdAt",
+            updated_at as "updatedAt"
+           FROM profiles 
+           WHERE user_id = $1 
+           LIMIT 1`,
+          [userId]
+        );
+        if (fallbackRes.rows.length > 0) {
+          profile = fallbackRes.rows[0];
+        }
+      } catch {
+        // DB might not have profiles populated yet
+      }
     }
 
-    // 3. Fetch User Permissions (via roles)
-    const permissionsRes = await query<{ code: string }>(
-      `SELECT DISTINCT p.code
-       FROM user_roles ur
-       JOIN role_permissions rp ON ur.role_id = rp.role_id
-       JOIN permissions p ON rp.permission_id = p.id
-       WHERE ur.user_id = $1`,
-      [userId]
-    );
+    // 2. Fetch User Roles
+    const profileId = profile?.id || userId;
+    let roles: string[] = [];
 
-    const permissions = permissionsRes.rows.map((row) => row.code);
+    try {
+      const rolesRes = await query<{ role_code?: string; code?: string }>(
+        `SELECT COALESCE(ur.role_code, r.code) as code
+         FROM user_roles ur
+         LEFT JOIN roles r ON ur.role_id = r.id OR ur.role_code = r.code
+         WHERE ur.user_id = $1 OR ur.user_id = $2`,
+        [userId, profileId]
+      );
+      roles = rolesRes.rows.map((row) => row.code || row.role_code).filter(Boolean) as string[];
+    } catch {
+      // If user_roles query fails, fall back
+    }
+
+    if (roles.length === 0) {
+      if (profile?.isAdmin || profile?.is_admin || (profile?.role && profile.role.includes('Admin'))) {
+        roles = ['SUPER_ADMIN', 'ADMIN'];
+      } else {
+        roles = ['USER'];
+      }
+    }
+
+    // 3. Fetch or resolve User Permissions
+    let permissions: string[] = [];
+    try {
+      const permissionsRes = await query<{ code: string }>(
+        `SELECT DISTINCT p.code
+         FROM user_roles ur
+         JOIN role_permissions rp ON ur.role_id = rp.role_id
+         JOIN permissions p ON rp.permission_id = p.id
+         WHERE ur.user_id = $1 OR ur.user_id = $2`,
+        [userId, profileId]
+      );
+      permissions = permissionsRes.rows.map((row) => row.code);
+    } catch {
+      // If permissions table not present, resolve via deterministic map
+    }
+
+    if (permissions.length === 0) {
+      permissions = resolveRolePermissions(roles);
+    }
 
     return { profile, roles, permissions };
   } catch {
-    // Fallback: If DB query fails (e.g. offline during tests or pre-migration), return standard defaults
-    return { profile: null, roles: ['USER'], permissions: [] };
+    // Fallback: If DB query fails, return standard defaults
+    return { profile: null, roles: ['USER'], permissions: resolveRolePermissions(['USER']) };
   }
 }
 
@@ -106,15 +226,31 @@ async function verifyAccessToken(token: string): Promise<{
     }
   }
 
-  // Option 2: Fallback to Supabase Auth API
+  // Option 2: Verify against Supabase Auth API
   try {
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Supabase Auth timeout')), 2000)
+      setTimeout(() => reject(new Error('Supabase Auth timeout')), 3500)
     );
 
-    const authPromise = supabaseAdmin.auth.getUser(token);
-    const { data: { user }, error } = await Promise.race([authPromise, timeoutPromise]) as any;
+    const authPromise = supabaseAnon.auth.getUser(token);
+    const { data: { user }, error } = (await Promise.race([authPromise, timeoutPromise])) as any;
 
+    if (!error && user) {
+      return {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        role: user.role || user.app_metadata?.role,
+        app_metadata: user.app_metadata,
+        user_metadata: user.user_metadata,
+      };
+    }
+  } catch {
+    // Continue to next check
+  }
+
+  try {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     if (!error && user) {
       return {
         id: user.id,

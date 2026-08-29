@@ -40,7 +40,7 @@ export function RejectWithdrawalModal({
   withdrawal,
 }: RejectWithdrawalModalProps) {
   const rejectWithdrawalMutation = useRejectWithdrawal();
-  const { rejectWithdrawal } = useAdminStore();
+  const rejectWithdrawal = useAdminStore((s) => s.rejectWithdrawal);
   const [selectedReason, setSelectedReason] = useState<string | null>(
     WITHDRAWAL_REJECT_REASONS[0],
   );
@@ -92,8 +92,8 @@ export function RejectWithdrawalModal({
       onClose={onClose}
       title={
         <Group gap="xs">
-          <IconX size={20} color="#fa5252" />
-          <Text fw={700} size="md">
+          <IconX size={20} color="#EF4444" />
+          <Text fw={800} size="md">
             Reject Withdrawal Request
           </Text>
         </Group>
@@ -113,29 +113,29 @@ export function RejectWithdrawalModal({
           available wallet balance.
         </Alert>
 
-        <Paper p="md" radius="md" withBorder bg="dark.8">
+        <Paper p="md" radius="md" withBorder bg="var(--mantine-color-default)">
           <Stack gap="xs">
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 User Account:
               </Text>
-              <Text size="sm" fw={600}>
+              <Text size="sm" fw={700}>
                 {withdrawal.userFullName} (@{withdrawal.username})
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Destination Account:
               </Text>
-              <Text size="sm" ff="monospace">
+              <Text size="sm" ff="monospace" fw={600}>
                 {withdrawal.paymentMethod} • {withdrawal.receiverAccount}
               </Text>
             </Group>
             <Group justify="space-between">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="dimmed" fw={600}>
                 Gross Amount to Refund:
               </Text>
-              <Text size="sm" fw={700} c="orange.4">
+              <Text size="sm" fw={900} c="orange.4" className="font-tabular">
                 {withdrawal.formattedAmount}
               </Text>
             </Group>
