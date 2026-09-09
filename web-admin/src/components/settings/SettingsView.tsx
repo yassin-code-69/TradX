@@ -10,12 +10,10 @@ import {
   Modal,
   NumberInput,
   Paper,
-  Select,
   SimpleGrid,
   Stack,
   Switch,
   Text,
-  Textarea,
   TextInput,
   ThemeIcon,
   Title,
@@ -23,7 +21,6 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
-  IconAlertTriangle,
   IconBuildingBank,
   IconCheck,
   IconCreditCard,
@@ -38,13 +35,10 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { formatBDT } from "@/lib/formatters";
 import { useLotteryStore } from "@/lib/store";
-import type {
-  PaymentMethodItem,
-  PlatformGeneralSettings,
-} from "@/types/lottery";
+import type { PaymentMethodItem } from "@/types/lottery";
 
 const SETTINGS_NAV_LINKS = [
   {
@@ -95,6 +89,9 @@ export function SettingsView({ initialTab = "payment" }: SettingsViewProps) {
     useState<PaymentMethodItem | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [newMethodName, setNewMethodName] = useState("");
+  const [newMethodCode, setNewMethodCode] = useState("");
+  const [newMethodAccount, setNewMethodAccount] = useState("");
 
   const handleReset = useCallback(() => {
     resetToDefaults();
@@ -121,6 +118,40 @@ export function SettingsView({ initialTab = "payment" }: SettingsViewProps) {
       icon: <IconCheck size={18} />,
     });
   }, [selectedMethodForEdit, updatePaymentMethod]);
+
+  const handleAddPaymentMethod = useCallback(() => {
+    if (!newMethodName.trim() || !newMethodCode.trim()) return;
+    addPaymentMethod({
+      name: newMethodName.trim(),
+      code: newMethodCode.trim().toUpperCase(),
+      type: "MOBILE_BANKING",
+      accountNumber: newMethodAccount.trim(),
+      accountName: `${newMethodName.trim()} Merchant`,
+      instructions: "Send money to this wallet/account number",
+      minimumDepositMinor: 10000,
+      maximumDepositMinor: 5000000,
+      minimumWithdrawMinor: 10000,
+      maximumWithdrawMinor: 5000000,
+      depositFeePercentageBasisPoints: 0,
+      depositFeeFixedMinor: 0,
+      withdrawFeePercentageBasisPoints: 150,
+      withdrawFeeFixedMinor: 0,
+      depositEnabled: true,
+      withdrawEnabled: true,
+      displayOrder: 99,
+      status: "ACTIVE",
+    });
+    setAddModalOpen(false);
+    setNewMethodName("");
+    setNewMethodCode("");
+    setNewMethodAccount("");
+    notifications.show({
+      title: "Gateway Added",
+      message: `${newMethodName} added to payment methods.`,
+      color: "teal",
+      icon: <IconCheck size={18} />,
+    });
+  }, [addPaymentMethod, newMethodName, newMethodCode, newMethodAccount]);
 
   return (
     <Stack gap="lg">
@@ -557,6 +588,50 @@ export function SettingsView({ initialTab = "payment" }: SettingsViewProps) {
           </Stack>
         </Modal>
       )}
+
+      {/* Add Gateway Modal */}
+      <Modal
+        opened={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        title={<Title order={4}>Add Payment Gateway</Title>}
+        radius="md"
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Gateway Name (e.g. Upay, Nagad Agent)"
+            placeholder="e.g. Upay"
+            value={newMethodName}
+            onChange={(e) => setNewMethodName(e.currentTarget.value)}
+            required
+          />
+          <TextInput
+            label="Gateway Code (e.g. UPAY, NAGAD_AGENT)"
+            placeholder="e.g. UPAY"
+            value={newMethodCode}
+            onChange={(e) => setNewMethodCode(e.currentTarget.value)}
+            required
+          />
+          <TextInput
+            label="Account Number / Merchant Number"
+            placeholder="01XXXXXXXXX"
+            value={newMethodAccount}
+            onChange={(e) => setNewMethodAccount(e.currentTarget.value)}
+          />
+          <Group justify="flex-end" mt="sm">
+            <Button variant="default" onClick={() => setAddModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="tradexGold"
+              c="#070B14"
+              fw={700}
+              onClick={handleAddPaymentMethod}
+            >
+              Add Gateway
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

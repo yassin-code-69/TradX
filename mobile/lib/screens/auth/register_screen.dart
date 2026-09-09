@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tradex/screens/auth/login_screen.dart';
 import 'package:tradex/screens/main_shell_screen.dart';
 import 'package:tradex/state/app_state.dart';
@@ -24,13 +25,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  final TextEditingController _referralController = TextEditingController(text: 'TRADEX777');
+  final TextEditingController _referralController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreedToTerms = true;
-  bool _isReferralValid = true;
-  bool _isCheckingReferral = false;
+  bool _isReferralValid = false;
+  final bool _isCheckingReferral = false;
   bool _isLoading = false;
 
   @override
@@ -45,28 +46,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _validateReferralCode() async {
+  void _validateReferralCode() {
     final code = _referralController.text.trim();
-    if (code.isEmpty) {
-      setState(() {
-        _isReferralValid = false;
-      });
-      return;
-    }
-
     setState(() {
-      _isCheckingReferral = true;
+      _isReferralValid = code.isNotEmpty;
     });
-
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    if (mounted) {
-      setState(() {
-        _isCheckingReferral = false;
-        _isReferralValid = true;
-      });
-      HapticFeedback.selectionClick();
-    }
   }
 
   void _handleRegister() async {
@@ -90,62 +74,90 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
     HapticFeedback.lightImpact();
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    try {
+      final appState = AppState();
+      final phoneClean = _phoneController.text.trim().startsWith('+880')
+          ? _phoneController.text.trim()
+          : '+880 ${_phoneController.text.trim()}';
 
-    if (!mounted) return;
+      final success = await appState.register(
+        fullName: _fullNameController.text.trim(),
+        username: _usernameController.text.trim(),
+        phone: phoneClean,
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        referralCode: _referralController.text.trim().isNotEmpty
+            ? _referralController.text.trim()
+            : null,
+      );
 
-    final appState = AppState();
-    final phoneClean = _phoneController.text.trim().startsWith('+880')
-        ? _phoneController.text.trim()
-        : '+880 ${_phoneController.text.trim()}';
+      if (!mounted) return;
 
-    appState.register(
-      fullName: _fullNameController.text.trim(),
-      username: _usernameController.text.trim(),
-      phone: phoneClean,
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      referralCode: _referralController.text.trim().isNotEmpty
-          ? _referralController.text.trim()
-          : null,
-    );
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.cardBgElevated,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: AppColors.greenAccent, width: 1),
-        ),
-        content: Row(
-          children: [
-            const Icon(Icons.celebration_rounded,
-                color: AppColors.greenLight, size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Welcome to TRADEX! ৳50 Welcome Bonus credited.',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12.5,
-                ),
-              ),
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.cardBgElevated,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: AppColors.greenAccent, width: 1),
             ),
-          ],
-        ),
-      ),
-    );
+            content: Row(
+              children: [
+                const Icon(Icons.celebration_rounded,
+                    color: AppColors.greenLight, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Welcome to TRADEX! Registration successful.',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MainShellScreen()),
-      (route) => false,
-    );
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainShellScreen()),
+          (route) => false,
+        );
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            e.message,
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Registration error: $e',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override

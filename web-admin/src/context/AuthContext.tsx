@@ -104,14 +104,121 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function createFallbackAdminUser(activeUser: User): AdminUser {
-  const metaRoles =
-    (activeUser.app_metadata?.roles as string[]) ||
-    (activeUser.user_metadata?.roles as string[]) ||
-    (activeUser.app_metadata?.role ? [activeUser.app_metadata.role] : []);
+/**
+ * Extract project ref from configured Supabase URL
+ */
+const SUPABASE_PROJECT_REF = (() => {
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    "https://mqrtqldebapvllidkcgs.supabase.co";
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.split(".")[0] || "mqrtqldebapvllidkcgs";
+  } catch {
+    return "mqrtqldebapvllidkcgs";
+  }
+})();
 
-  const userRoles = metaRoles.length > 0 ? metaRoles : ["SUPER_ADMIN", "ADMIN"];
+/**
+ * Sync Supabase authentication session to HTTP cookies for Edge Middleware route guards
+ */
+export function syncAuthCookies(session: Session | null) {
+  if (typeof document === "undefined") return;
 
+  const cookieNames = [
+    `sb-${SUPABASE_PROJECT_REF}-auth-token`,
+    "sb-access-token",
+    "auth_token",
+  ];
+
+  if (session?.access_token) {
+    const sessionJson = encodeURIComponent(JSON.stringify(session));
+    const maxAge = 60 * 60 * 24 * 7; // 7 days
+    // biome-ignore lint/suspicious/noDocumentCookie: Synchronize auth token cookies for Next.js Edge Middleware
+    document.cookie = `sb-${SUPABASE_PROJECT_REF}-auth-token=${sessionJson}; path=/; max-age=${maxAge}; SameSite=Lax`;
+    // biome-ignore lint/suspicious/noDocumentCookie: Synchronize auth token cookies for Next.js Edge Middleware
+    document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  } else {
+    for (const name of cookieNames) {
+      // biome-ignore lint/suspicious/noDocumentCookie: Clear auth token cookies on signout
+      document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+    }
+  }
+}
+
+/**
+ * Strictly extract valid administrative roles from Supabase user metadata.
+ * Returns empty array if user has no authorized admin roles.
+ */
+export function extractUserRoles(user: User): string[] {
+  const extractedRoles: string[] = [];
+
+  // 1. Inspect app_metadata
+  if (user.app_metadata) {
+    if (Array.isArray(user.app_metadata.roles)) {
+      for (const r of user.app_metadata.roles) {
+        if (typeof r === "string") extractedRoles.push(r);
+      }
+    }
+    if (typeof user.app_metadata.role === "string") {
+      extractedRoles.push(user.app_metadata.role);
+    }
+    if (
+      user.app_metadata.is_admin === true ||
+      user.app_metadata.isAdmin === true
+    ) {
+      extractedRoles.push("ADMIN");
+    }
+  }
+
+  // 2. Inspect user_metadata
+  if (user.user_metadata) {
+    if (Array.isArray(user.user_metadata.roles)) {
+      for (const r of user.user_metadata.roles) {
+        if (typeof r === "string") extractedRoles.push(r);
+      }
+    }
+    if (typeof user.user_metadata.role === "string") {
+      extractedRoles.push(user.user_metadata.role);
+    }
+    if (
+      user.user_metadata.is_admin === true ||
+      user.user_metadata.isAdmin === true
+    ) {
+      extractedRoles.push("ADMIN");
+    }
+  }
+
+  // Normalize: trim, uppercase, remove hyphens
+  const normalized = extractedRoles
+    .map((r) => {
+      const clean = r.trim().toUpperCase().replace(/-/g, "_");
+      if (clean === "SUPERADMIN") return "SUPER_ADMIN";
+      if (clean === "FINANCE") return "FINANCE_ADMIN";
+      return clean;
+    })
+    .filter(Boolean);
+
+  // Filter strictly against known valid administrative roles
+  const validAdminRoles = Array.from(new Set(normalized)).filter((r) =>
+    DEFAULT_ADMIN_ROLES.includes(r),
+  );
+
+  return validAdminRoles;
+}
+
+/**
+ * Check whether a Supabase user possesses authorized administrative roles
+ */
+export function isUserAdmin(user: User | null): boolean {
+  if (!user) return false;
+  return extractUserRoles(user).length > 0;
+}
+
+function createAdminUserFromSession(
+  activeUser: User,
+  userRoles: string[],
+): AdminUser {
   return {
     id: activeUser.id,
     userId: activeUser.id,
@@ -121,7 +228,7 @@ function createFallbackAdminUser(activeUser: User): AdminUser {
       activeUser.user_metadata?.username ||
       activeUser.email?.split("@")[0] ||
       "Admin",
-    role: userRoles[0] || "SUPER_ADMIN",
+    role: userRoles[0] || "ADMIN",
     roles: userRoles,
     permissions: FULL_ADMIN_PERMISSIONS,
     profile: {
@@ -148,31 +255,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const loadUserProfile = useCallback(async (activeUser: User) => {
-    // 1. Immediately establish working profile from Supabase user session
-    const fallback = createFallbackAdminUser(activeUser);
-    setAdminUser(fallback);
-    setRoles(fallback.roles);
-    setPermissions(fallback.permissions);
+  const loadUserProfile = useCallback(
+    async (activeUser: User, knownRoles: string[]) => {
+      // 1. Establish profile from validated session roles
+      const localAdmin = createAdminUserFromSession(activeUser, knownRoles);
+      setAdminUser(localAdmin);
+      setRoles(knownRoles);
+      setPermissions(localAdmin.permissions);
 
-    // 2. Asynchronously attempt backend enrichment in background without blocking
-    try {
-      const backendUser = await Promise.race([
-        apiClient.get<AdminUser>("/api/v1/me"),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), 2000),
-        ),
-      ]);
+      // 2. Asynchronously attempt backend enrichment in background without blocking
+      try {
+        const backendUser = await Promise.race([
+          apiClient.get<AdminUser>("/api/v1/me"),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), 2000),
+          ),
+        ]);
 
-      if (backendUser?.roles && backendUser.roles.length > 0) {
-        setAdminUser(backendUser);
-        setRoles(backendUser.roles);
-        setPermissions(backendUser.permissions || FULL_ADMIN_PERMISSIONS);
+        if (backendUser?.roles && backendUser.roles.length > 0) {
+          const backendAdminRoles = backendUser.roles.filter((r) =>
+            DEFAULT_ADMIN_ROLES.includes(r.toUpperCase()),
+          );
+          if (backendAdminRoles.length > 0) {
+            setAdminUser(backendUser);
+            setRoles(backendAdminRoles);
+            setPermissions(backendUser.permissions || FULL_ADMIN_PERMISSIONS);
+          }
+        }
+      } catch {
+        // Backend is offline or optional in standalone admin mode
       }
-    } catch {
-      // Backend is offline or optional in standalone admin mode
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Initialize session and auth state listener
   useEffect(() => {
@@ -187,10 +302,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!isMounted) return;
 
         if (initialSession?.user) {
-          setSession(initialSession);
-          setUser(initialSession.user);
-          await loadUserProfile(initialSession.user);
+          const adminRoles = extractUserRoles(initialSession.user);
+          if (adminRoles.length === 0) {
+            // Strictly reject non-admin session
+            await supabase.auth.signOut();
+            syncAuthCookies(null);
+            setSession(null);
+            setUser(null);
+            setAdminUser(null);
+            setRoles([]);
+            setPermissions([]);
+          } else {
+            setSession(initialSession);
+            setUser(initialSession.user);
+            syncAuthCookies(initialSession);
+            await loadUserProfile(initialSession.user, adminRoles);
+          }
         } else {
+          syncAuthCookies(null);
           setSession(null);
           setUser(null);
           setAdminUser(null);
@@ -214,10 +343,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!isMounted) return;
 
       if (newSession?.user) {
-        setSession(newSession);
-        setUser(newSession.user);
-        await loadUserProfile(newSession.user);
+        const adminRoles = extractUserRoles(newSession.user);
+        if (adminRoles.length === 0) {
+          // Strictly reject non-admin session
+          await supabase.auth.signOut();
+          syncAuthCookies(null);
+          setSession(null);
+          setUser(null);
+          setAdminUser(null);
+          setRoles([]);
+          setPermissions([]);
+        } else {
+          setSession(newSession);
+          setUser(newSession.user);
+          syncAuthCookies(newSession);
+          await loadUserProfile(newSession.user, adminRoles);
+        }
       } else {
+        syncAuthCookies(null);
         setSession(null);
         setUser(null);
         setAdminUser(null);
@@ -230,6 +373,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleUnauthorized = () => {
       // Only sign out if actively in protected app area
       if (pathname !== "/login") {
+        syncAuthCookies(null);
         supabase.auth.signOut();
         router.replace("/login");
       }
@@ -269,16 +413,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { error };
         }
 
-        if (data.session && data.user) {
-          setSession(data.session);
-          setUser(data.user);
-          const fallback = createFallbackAdminUser(data.user);
-          setAdminUser(fallback);
-          setRoles(fallback.roles);
-          setPermissions(fallback.permissions);
-          router.replace("/dashboard");
+        if (!data.session || !data.user) {
+          return {
+            error: new Error(
+              "Authentication failed. No active session created.",
+            ),
+          };
         }
 
+        // Strictly verify administrative authorization
+        const adminRoles = extractUserRoles(data.user);
+        if (adminRoles.length === 0) {
+          // Reject non-admin logins immediately
+          await supabase.auth.signOut();
+          syncAuthCookies(null);
+          return {
+            error: new Error(
+              "Access denied: Unauthorized. Administrator privileges required to access TRADEX Admin Portal.",
+            ),
+          };
+        }
+
+        setSession(data.session);
+        setUser(data.user);
+        syncAuthCookies(data.session);
+
+        const adminProfile = createAdminUserFromSession(data.user, adminRoles);
+        setAdminUser(adminProfile);
+        setRoles(adminRoles);
+        setPermissions(adminProfile.permissions);
+
+        // Background enrichment
+        loadUserProfile(data.user, adminRoles).catch(() => {});
+
+        router.replace("/dashboard");
         return { error: null };
       } catch (err) {
         return {
@@ -287,13 +455,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
     },
-    [router],
+    [router, loadUserProfile],
   );
 
   const logout = useCallback(async () => {
     try {
+      syncAuthCookies(null);
       await supabase.auth.signOut();
     } finally {
+      syncAuthCookies(null);
       setSession(null);
       setUser(null);
       setAdminUser(null);
@@ -332,7 +502,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (user) {
-      await loadUserProfile(user);
+      const adminRoles = extractUserRoles(user);
+      if (adminRoles.length > 0) {
+        await loadUserProfile(user, adminRoles);
+      }
     }
   }, [user, loadUserProfile]);
 
@@ -344,7 +517,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       roles,
       permissions,
       isLoading,
-      isAuthenticated: !!session,
+      isAuthenticated: !!session && roles.length > 0,
       isAdmin,
       login,
       logout,

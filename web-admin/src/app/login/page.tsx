@@ -2,7 +2,6 @@
 
 import {
   Alert,
-  Badge,
   Box,
   Button,
   Center,
@@ -21,12 +20,10 @@ import {
 import {
   IconAlertCircle,
   IconArrowRight,
-  IconCopy,
   IconCrown,
   IconLock,
   IconMail,
   IconShieldCheck,
-  IconSparkles,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
@@ -44,14 +41,6 @@ export default function LoginPage() {
 
   const { login } = useAuth();
   const router = useRouter();
-
-  const handleQuickFill = () => {
-    setEmail("admin@xoxoshop.com");
-    setPassword("Admin@123456");
-    setEmailError("");
-    setPasswordError("");
-    setAuthError(null);
-  };
 
   const validate = (): boolean => {
     let isValid = true;
@@ -181,45 +170,6 @@ export default function LoginPage() {
               "0 30px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08)",
           }}
         >
-          {/* Quick Fill Helper for Developers */}
-          <Paper
-            p="xs"
-            radius="md"
-            mb="md"
-            style={{
-              backgroundColor: "rgba(245, 158, 11, 0.1)",
-              border: "1px solid rgba(245, 158, 11, 0.3)",
-            }}
-          >
-            <Group justify="space-between" wrap="nowrap">
-              <Group gap={8} wrap="nowrap">
-                <IconSparkles size={16} color="#F59E0B" />
-                <div>
-                  <Text size="xs" fw={700} c="#FEF3C7">
-                    Developer Admin Credentials
-                  </Text>
-                  <Text size="11px" c="#CBD5E1">
-                    admin@xoxoshop.com • Admin@123456
-                  </Text>
-                </div>
-              </Group>
-              <Button
-                size="compact-xs"
-                variant="light"
-                color="yellow"
-                onClick={handleQuickFill}
-                leftSection={<IconCopy size={12} />}
-                style={{
-                  fontWeight: 700,
-                  fontSize: "11px",
-                  borderColor: "rgba(245, 158, 11, 0.4)",
-                }}
-              >
-                Auto Fill
-              </Button>
-            </Group>
-          </Paper>
-
           <form onSubmit={handleSubmit}>
             <Stack gap="md">
               {authError && (

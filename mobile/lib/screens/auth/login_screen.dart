@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tradex/screens/auth/forgot_password_screen.dart';
 import 'package:tradex/screens/auth/register_screen.dart';
 import 'package:tradex/screens/main_shell_screen.dart';
@@ -18,10 +19,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _identifierController =
-      TextEditingController(text: '01712345678');
-  final TextEditingController _passwordController =
-      TextEditingController(text: 'Password123!');
+  final TextEditingController _identifierController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _rememberMe = true;
@@ -45,77 +44,110 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     HapticFeedback.lightImpact();
 
-    // Simulated network authentication
-    await Future.delayed(const Duration(milliseconds: 900));
+    try {
+      final appState = AppState();
+      final success = await appState.login(
+        emailOrPhone: _identifierController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    final appState = AppState();
-    final success = appState.login(
-      _identifierController.text.trim(),
-      _passwordController.text,
-    );
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.cardBgElevated,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: AppColors.goldPrimary, width: 1),
+            ),
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded,
+                    color: AppColors.goldPrimary, size: 20),
+                const SizedBox(width: 10),
+                Text(
+                  'Welcome back to TRADEX!',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (success) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainShellScreen()),
+          (route) => false,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.redBg,
+            behavior: SnackBarBehavior.floating,
+            content: Text(
+              'Login failed. Please verify your credentials.',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+          ),
+        );
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: AppColors.cardBgElevated,
+          backgroundColor: AppColors.redBg,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: AppColors.goldPrimary, width: 1),
-          ),
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_rounded,
-                  color: AppColors.goldPrimary, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                'Welcome back to TRADEX!',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          content: Text(
+            e.message,
+            style: GoogleFonts.inter(color: Colors.white),
           ),
         ),
       );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Authentication error: $e',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
+  void _handleBiometrics() {
+    HapticFeedback.heavyImpact();
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const MainShellScreen()),
         (route) => false,
       );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.cardBgElevated,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Please sign in with email/password first to enable quick biometric access.',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
     }
-  }
-
-  void _quickFill(String identifier, String password) {
-    setState(() {
-      _identifierController.text = identifier;
-      _passwordController.text = password;
-    });
-    HapticFeedback.selectionClick();
-  }
-
-  void _handleBiometrics() async {
-    HapticFeedback.heavyImpact();
-    setState(() {
-      _isLoading = true;
-    });
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    AppState().login('biometric_user', 'biometric_auth');
-    setState(() {
-      _isLoading = false;
-    });
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MainShellScreen()),
-      (route) => false,
-    );
   }
 
   @override
@@ -180,69 +212,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Quick Demo Login Selection Chips
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBgElevated,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppColors.goldPrimary.withValues(alpha: 0.25),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.bolt_rounded,
-                            size: 16,
-                            color: AppColors.goldLight,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'QUICK DEMO ACCOUNTS',
-                            style: GoogleFonts.inter(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.0,
-                              color: AppColors.goldLight,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDemoChip(
-                              label: 'VIP Platinum',
-                              sub: 'Shek Ahmmed',
-                              onTap: () => _quickFill(
-                                'shekahmmed@email.com',
-                                'Password123!',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildDemoChip(
-                              label: 'Active Player',
-                              sub: '+880 1712...',
-                              onTap: () => _quickFill(
-                                '01712345678',
-                                'tradex2026',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
                 const SizedBox(height: 20),
+
+                // Main Form Card
 
                 // Main Form Card
                 GlassCard(
@@ -486,48 +458,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDemoChip({
-    required String label,
-    required String sub,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundSecondary,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.cardBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.goldLight,
-                ),
-              ),
-              Text(
-                sub,
-                style: GoogleFonts.inter(
-                  fontSize: 9.5,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ],
           ),
         ),
       ),

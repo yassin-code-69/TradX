@@ -9,12 +9,10 @@ import {
   Card,
   Divider,
   Group,
-  Menu,
   Modal,
   NumberInput,
   Pagination,
   Paper,
-  ScrollArea,
   SegmentedControl,
   Select,
   SimpleGrid,
@@ -36,14 +34,11 @@ import {
   IconAlertTriangle,
   IconCalendarEvent,
   IconCheck,
-  IconChevronDown,
-  IconCoin,
   IconDice,
   IconEye,
   IconLayoutGrid,
   IconList,
   IconLock,
-  IconLockOpen,
   IconPlayerPlay,
   IconPlus,
   IconRefresh,
@@ -54,7 +49,8 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useCallback, useMemo, useState } from "react";
+import type React from "react";
+import { useCallback, useMemo, useState } from "react";
 import { EmptyState } from "@/components/common/EmptyState";
 import { LiveCountdown } from "@/components/common/LiveCountdown";
 import { useCreateDraw, useUpdateDrawStatus } from "@/lib/api";

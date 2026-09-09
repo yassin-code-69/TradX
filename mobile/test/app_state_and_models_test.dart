@@ -18,8 +18,8 @@ void main() {
       expect(appState.availableBalance > 0, true);
       expect(appState.lockedBalance > 0, true);
       expect(appState.walletBalance > 0, true);
-      expect(appState.isLoggedIn, true);
-      expect(appState.currentUser.username, 'shek_vip');
+      expect(appState.isLoggedIn, false);
+      expect(appState.currentUser.fullName, 'Guest User');
       expect(appState.purchasedTickets.isNotEmpty, true);
       expect(appState.notifications.isNotEmpty, true);
       expect(appState.savedPaymentMethods.isNotEmpty, true);
@@ -223,7 +223,7 @@ void main() {
       expect(appState.unreadNotificationsCount, 0);
     });
 
-    test('Auth login, logout and profile updates', () {
+    test('Auth login, logout and profile updates', () async {
       appState.updateProfile(
         fullName: 'Shek Test Ahmmed',
         phone: '+880 1711223344',
@@ -232,10 +232,13 @@ void main() {
       expect(appState.currentUser.fullName, 'Shek Test Ahmmed');
       expect(appState.currentUser.email, 'shek.new@tradex.com');
 
-      appState.logout();
+      await appState.logout();
       expect(appState.isLoggedIn, false);
 
-      final loginSuccess = appState.login('01711223344', 'Password123');
+      final loginSuccess = await appState.login(
+        emailOrPhone: '01711223344',
+        password: 'Password123',
+      );
       expect(loginSuccess, true);
       expect(appState.isLoggedIn, true);
     });

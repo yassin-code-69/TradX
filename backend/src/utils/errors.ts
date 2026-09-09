@@ -33,6 +33,7 @@ export type ErrorCode =
   | 'NOT_NULL_VIOLATION'
   | 'INVALID_STATE_TRANSITION'
   | 'LEDGER_IMBALANCE'
+  | 'RATE_LIMIT_EXCEEDED'
   | 'INTERNAL_SERVER_ERROR';
 
 export class AppError extends Error {
@@ -123,3 +124,10 @@ export class InsufficientBalanceError extends AppError {
     super('INSUFFICIENT_BALANCE', message, 400, details);
   }
 }
+
+export class TooManyRequestsError extends AppError {
+  constructor(message: string = 'Too many requests, please try again later', details?: unknown) {
+    super('RATE_LIMIT_EXCEEDED', message, 429, details);
+  }
+}
+

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tradex/screens/auth/login_screen.dart';
 import 'package:tradex/theme/app_colors.dart';
 import 'package:tradex/widgets/tradex_widgets.dart';
@@ -82,15 +83,47 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     });
     HapticFeedback.lightImpact();
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(
+          password: _newPasswordController.text,
+        ),
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    _showSuccessDialog();
+      _showSuccessDialog();
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            e.message,
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Failed to reset password: $e',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _showSuccessDialog() {

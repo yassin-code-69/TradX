@@ -138,7 +138,34 @@ async function fetchUserProfileAndPermissions(userId: string): Promise<{
           profile = fallbackRes.rows[0];
         }
       } catch {
-        // DB might not have profiles populated yet
+        // Ignore fallback query error
+      }
+    }
+
+    // If pool queries failed or returned null, query via Supabase Admin Client
+    if (!profile) {
+      try {
+        const { data: pData } = await supabaseAdmin
+          .from('profiles')
+          .select('*')
+          .or(`user_id.eq.${userId},id.eq.${userId}`)
+          .maybeSingle();
+        if (pData) {
+          profile = {
+            id: pData.id || pData.user_id,
+            userId: pData.user_id || pData.id,
+            publicId: pData.public_id || pData.id,
+            username: pData.username || pData.display_name,
+            fullName: pData.full_name || pData.name,
+            email: pData.email,
+            status: pData.status || 'ACTIVE',
+            kycStatus: pData.kyc_status || 'NOT_SUBMITTED',
+            createdAt: pData.created_at,
+            updatedAt: pData.updated_at,
+          };
+        }
+      } catch {
+        // Ignore Supabase fallback error
       }
     }
 
@@ -147,16 +174,27 @@ async function fetchUserProfileAndPermissions(userId: string): Promise<{
     let roles: string[] = [];
 
     try {
-      const rolesRes = await query<{ role_code?: string; code?: string }>(
-        `SELECT COALESCE(ur.role_code, r.code) as code
+      const rolesRes = await query<{ role_code?: string; code?: string; role?: string }>(
+        `SELECT COALESCE(ur.role, r.code) as code
          FROM user_roles ur
-         LEFT JOIN roles r ON ur.role_id = r.id OR ur.role_code = r.code
+         LEFT JOIN roles r ON ur.role_id = r.id
          WHERE ur.user_id = $1 OR ur.user_id = $2`,
         [userId, profileId]
       );
-      roles = rolesRes.rows.map((row) => row.code || row.role_code).filter(Boolean) as string[];
+      roles = rolesRes.rows.map((row) => row.code || row.role_code || row.role).filter(Boolean) as string[];
     } catch {
-      // If user_roles query fails, fall back
+      // If user_roles pool query fails, query via Supabase Admin
+      try {
+        const { data: urData } = await supabaseAdmin
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId);
+        if (urData && urData.length > 0) {
+          roles = urData.map((r: any) => r.role === 'admin' ? 'ADMIN' : r.role.toUpperCase());
+        }
+      } catch {
+        // Ignore fallback error
+      }
     }
 
     if (roles.length === 0) {
@@ -286,10 +324,23 @@ export async function authenticateToken(c: Context): Promise<AuthUser | null> {
     const authData = await verifyAccessToken(token);
     const { profile, roles, permissions } = await fetchUserProfileAndPermissions(authData.id);
 
-    // If token has explicit role claim and DB returned default 'USER', reflect token role
-    const resolvedRoles = authData.role && !roles.includes(authData.role)
-      ? [authData.role, ...roles]
-      : roles;
+    // Extract authoritative app_metadata roles
+    const tokenRoles = (authData.app_metadata?.roles as string[]) || 
+                       (authData.app_metadata?.role ? [authData.app_metadata.role] : []);
+    
+    const normalizedTokenRoles = tokenRoles.map(r => r === 'admin' ? 'ADMIN' : r);
+    const normalizedDbRoles = roles.map(r => r === 'admin' ? 'ADMIN' : r);
+
+    const ROLE_PRIORITY = ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'DRAW_MANAGER', 'SUPPORT', 'AGENT', 'CUSTOMER', 'USER'];
+    const mergedRoles = Array.from(new Set([...normalizedTokenRoles, ...normalizedDbRoles]))
+      .sort((a, b) => {
+        const idxA = ROLE_PRIORITY.indexOf(a);
+        const idxB = ROLE_PRIORITY.indexOf(b);
+        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+      });
+
+    const resolvedRoles = mergedRoles.length > 0 ? mergedRoles : ['USER'];
+    const resolvedPermissions = resolveRolePermissions(resolvedRoles);
 
     const primaryRole = resolvedRoles[0] || 'USER';
     const statusVal = profile?.status ?? 'ACTIVE';
@@ -302,7 +353,7 @@ export async function authenticateToken(c: Context): Promise<AuthUser | null> {
       username: profile?.username || authData.user_metadata?.username || `user_${authData.id.slice(0, 8)}`,
       role: primaryRole,
       roles: resolvedRoles,
-      permissions,
+      permissions: resolvedPermissions,
       status: statusVal,
       appMetadata: authData.app_metadata,
       userMetadata: authData.user_metadata,
@@ -345,9 +396,23 @@ export async function requireAuth(c: Context, next: Next) {
     }
   }
 
-  const resolvedRoles = authData.role && !roles.includes(authData.role)
-    ? [authData.role, ...roles]
-    : roles;
+  // Extract authoritative app_metadata roles
+  const tokenRoles = (authData.app_metadata?.roles as string[]) || 
+                     (authData.app_metadata?.role ? [authData.app_metadata.role] : []);
+  
+  const normalizedTokenRoles = tokenRoles.map(r => r === 'admin' ? 'ADMIN' : r);
+  const normalizedDbRoles = roles.map(r => r === 'admin' ? 'ADMIN' : r);
+
+  const ROLE_PRIORITY = ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'DRAW_MANAGER', 'SUPPORT', 'AGENT', 'CUSTOMER', 'USER'];
+  const mergedRoles = Array.from(new Set([...normalizedTokenRoles, ...normalizedDbRoles]))
+    .sort((a, b) => {
+      const idxA = ROLE_PRIORITY.indexOf(a);
+      const idxB = ROLE_PRIORITY.indexOf(b);
+      return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+    });
+
+  const resolvedRoles = mergedRoles.length > 0 ? mergedRoles : ['USER'];
+  const resolvedPermissions = resolveRolePermissions(resolvedRoles);
 
   const primaryRole = resolvedRoles[0] || 'USER';
   const statusVal = profile?.status ?? 'ACTIVE';
@@ -360,7 +425,7 @@ export async function requireAuth(c: Context, next: Next) {
     username: profile?.username || authData.user_metadata?.username || `user_${authData.id.slice(0, 8)}`,
     role: primaryRole,
     roles: resolvedRoles,
-    permissions,
+    permissions: resolvedPermissions,
     status: statusVal,
     appMetadata: authData.app_metadata,
     userMetadata: authData.user_metadata,
@@ -371,7 +436,7 @@ export async function requireAuth(c: Context, next: Next) {
   c.set('user', authUser);
   c.set('userId', authUser.id);
   c.set('roles', resolvedRoles);
-  c.set('permissions', permissions);
+  c.set('permissions', resolvedPermissions);
   c.set('token', token);
 
   await next();

@@ -13,7 +13,6 @@ import {
   Pagination,
   Paper,
   PinInput,
-  ScrollArea,
   Select,
   SimpleGrid,
   Stack,
@@ -22,26 +21,23 @@ import {
   TextInput,
   ThemeIcon,
   Title,
-  Tooltip,
   UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
-  IconAlertCircle,
   IconAlertTriangle,
   IconAward,
   IconClock,
-  IconCoin,
   IconCrown,
   IconEye,
   IconPlus,
   IconRefresh,
-  IconSparkles,
   IconTrophy,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useCallback, useMemo, useState } from "react";
+import type React from "react";
+import { useCallback, useMemo, useState } from "react";
 import { EmptyState } from "@/components/common/EmptyState";
 import { usePublishResult } from "@/lib/api";
 import {
@@ -52,7 +48,7 @@ import {
   padLotteryNumber,
 } from "@/lib/formatters";
 import { useLotteryStore } from "@/lib/store";
-import type { Draw, DrawResult, Ticket } from "@/types/lottery";
+import type { DrawResult } from "@/types/lottery";
 
 const RESULTS_NAV_LINKS = [
   { label: "All Results", href: "/results", icon: IconAward },
@@ -84,8 +80,7 @@ export function ResultsView({
 }: ResultsViewProps) {
   const pathname = usePathname();
   const publishResultMutation = usePublishResult();
-  const { draws, results, winnerBreakdowns, tickets, publishWinningNumber } =
-    useLotteryStore();
+  const { draws, results, tickets, publishWinningNumber } = useLotteryStore();
 
   const activeTab = useMemo(() => {
     if (pathname === "/results/winners") return "COMPLETED";
@@ -146,12 +141,12 @@ export function ResultsView({
     };
   }, [results, pendingDraws]);
 
-  const generateAuditHash = () => {
+  const generateAuditHash = useCallback(() => {
     const randomHex = Array.from({ length: 32 }, () =>
       Math.floor(Math.random() * 16).toString(16),
     ).join("");
     setAuditHash(`0x${randomHex}`);
-  };
+  }, []);
 
   const handleOpenPublishModal = useCallback(
     (drawId?: number) => {
@@ -169,7 +164,7 @@ export function ResultsView({
       }
       setPublishModalOpen(true);
     },
-    [pendingDraws],
+    [pendingDraws, generateAuditHash],
   );
 
   const handlePublishSubmit = async (e: React.FormEvent) => {
@@ -572,7 +567,7 @@ export function ResultsView({
                           .split("")
                           .map((digit, idx) => (
                             <span
-                              key={idx}
+                              key={`${result.id}-digit-${idx}-${digit}`}
                               className="digit-ball font-tabular"
                               style={{
                                 display: "inline-flex",

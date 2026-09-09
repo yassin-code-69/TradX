@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tradex/screens/auth/reset_password_screen.dart';
+import 'package:tradex/state/app_state.dart';
 import 'package:tradex/theme/app_colors.dart';
 import 'package:tradex/widgets/tradex_widgets.dart';
 
@@ -12,8 +14,8 @@ class OtpVerificationScreen extends StatefulWidget {
 
   const OtpVerificationScreen({
     super.key,
-    this.target = '+880 1712-345678',
-    this.isPhone = true,
+    this.target = '',
+    this.isPhone = false,
   });
 
   @override
@@ -100,7 +102,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  void _handleResendCode() {
+  void _handleResendCode() async {
     if (_resendCountdown > 0) return;
 
     HapticFeedback.lightImpact();
@@ -110,39 +112,61 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     _focusNodes[0].requestFocus();
     _startTimer();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.cardBgElevated,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: AppColors.goldPrimary, width: 1),
-        ),
-        content: Row(
-          children: [
-            const Icon(Icons.mark_email_read_rounded,
-                color: AppColors.goldPrimary, size: 20),
-            const SizedBox(width: 10),
-            Text(
-              'A new 6-digit code has been sent!',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    try {
+      final appState = AppState();
+      await appState.sendPasswordReset(widget.target);
 
-  void _demoFillOtp() {
-    const sample = '789456';
-    for (int i = 0; i < _otpLength; i++) {
-      _controllers[i].text = sample[i];
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.cardBgElevated,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: AppColors.goldPrimary, width: 1),
+          ),
+          content: Row(
+            children: [
+              const Icon(Icons.mark_email_read_rounded,
+                  color: AppColors.goldPrimary, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'A new 6-digit code has been sent!',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            e.message,
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Failed to resend code: $e',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
     }
-    HapticFeedback.selectionClick();
-    setState(() {});
   }
 
   void _handleVerify() async {
@@ -162,18 +186,52 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
     HapticFeedback.mediumImpact();
 
-    await Future.delayed(const Duration(milliseconds: 900));
+    try {
+      final appState = AppState();
+      final success = await appState.verifyOtp(
+        email: widget.target,
+        token: otp,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const ResetPasswordScreen()),
-    );
+      if (success) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ResetPasswordScreen()),
+        );
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            e.message,
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Verification error: $e',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -354,39 +412,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       variant: TradexButtonVariant.primaryGold,
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Demo Fill Helper Chip
-              GestureDetector(
-                onTap: _demoFillOtp,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBgElevated,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppColors.cardBorderHighlight,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.auto_fix_high_rounded,
-                          size: 14, color: AppColors.goldLight),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Demo Quick Fill: 789456',
-                        style: GoogleFonts.inter(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.goldLight,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
               const SizedBox(height: 24),

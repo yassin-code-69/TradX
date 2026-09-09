@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tradex/models/draw_model.dart';
 import 'package:tradex/models/draw_result.dart';
 import 'package:tradex/models/kyc_model.dart';
@@ -7,12 +8,69 @@ import 'package:tradex/models/payment_method_model.dart';
 import 'package:tradex/models/ticket_model.dart';
 import 'package:tradex/models/transaction_model.dart';
 import 'package:tradex/models/user_model.dart';
+import 'package:tradex/services/api_service.dart';
 
 class AppState extends ChangeNotifier {
   static final AppState _instance = AppState._internal();
   factory AppState() => _instance;
   AppState._internal() {
+    _initializeAuthListener();
     _initializeData();
+  }
+
+  bool get _isSupabaseInitialized {
+    try {
+      Supabase.instance.client;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _initializeAuthListener() {
+    if (!_isSupabaseInitialized) return;
+
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        _isLoggedIn = true;
+        ApiService().setAuthToken(session.accessToken);
+        syncUserProfile();
+      } else {
+        _isLoggedIn = false;
+      }
+
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        final session = data.session;
+        if (session != null) {
+          _isLoggedIn = true;
+          ApiService().setAuthToken(session.accessToken);
+          syncUserProfile();
+        } else {
+          _isLoggedIn = false;
+          ApiService().setAuthToken('');
+          _currentUser = UserModel(
+            id: '',
+            fullName: 'Guest User',
+            username: 'guest',
+            email: '',
+            phone: '',
+            referralCode: '',
+            joinedAt: DateTime.now(),
+            kycStatus: KycStatus.notSubmitted,
+            tier: 'Standard Member',
+            referralCount: 0,
+            referralEarnings: 0.0,
+            isEmailVerified: false,
+            isPhoneVerified: false,
+            twoFactorEnabled: false,
+            biometricsEnabled: false,
+          );
+          _kyc = const KycModel(status: KycStatus.notSubmitted);
+          notifyListeners();
+        }
+      });
+    } catch (_) {}
   }
 
   // --- NAVIGATION TAB STATE ---
@@ -27,56 +85,308 @@ class AppState extends ChangeNotifier {
   }
 
   // --- USER & AUTH STATE ---
-  bool _isLoggedIn = true;
+  bool _isLoggedIn = false;
   bool get isLoggedIn => _isLoggedIn;
 
-  UserModel _currentUser = UserModel.sampleUser;
+  UserModel _currentUser = UserModel(
+    id: '',
+    fullName: 'Guest User',
+    username: 'guest',
+    email: '',
+    phone: '',
+    referralCode: '',
+    joinedAt: DateTime.now(),
+    kycStatus: KycStatus.notSubmitted,
+    tier: 'Standard Member',
+    referralCount: 0,
+    referralEarnings: 0.0,
+    isEmailVerified: false,
+    isPhoneVerified: false,
+    twoFactorEnabled: false,
+    biometricsEnabled: false,
+  );
   UserModel get currentUser => _currentUser;
 
   KycModel _kyc = const KycModel(
-    status: KycStatus.verified,
-    documentType: DocumentType.nid,
-    documentNumber: 'NID-9482938472',
-    fullName: 'Shek Ahmmed',
-    dateOfBirth: '1995-04-12',
+    status: KycStatus.notSubmitted,
   );
   KycModel get kyc => _kyc;
 
-  bool login(String identifier, String password) {
-    _isLoggedIn = true;
-    notifyListeners();
-    return true;
+  Future<bool> login({
+    required String emailOrPhone,
+    required String password,
+  }) async {
+    if (!_isSupabaseInitialized) {
+      _isLoggedIn = true;
+      notifyListeners();
+      return true;
+    }
+    final clean = emailOrPhone.trim();
+    final isEmail = clean.contains('@');
+    final AuthResponse response;
+    if (isEmail) {
+      response = await Supabase.instance.client.auth.signInWithPassword(
+        email: clean,
+        password: password,
+      );
+    } else {
+      final phone = clean.startsWith('+')
+          ? clean
+          : (clean.startsWith('880')
+              ? '+$clean'
+              : '+880${clean.replaceFirst(RegExp(r'^0+'), '')}');
+      response = await Supabase.instance.client.auth.signInWithPassword(
+        phone: phone,
+        password: password,
+      );
+    }
+
+    if (response.user != null) {
+      _isLoggedIn = true;
+      if (response.session != null) {
+        ApiService().setAuthToken(response.session!.accessToken);
+      }
+      await syncUserProfile();
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
-  bool register({
+  Future<bool> register({
     required String fullName,
     required String username,
     required String phone,
     required String email,
     required String password,
     String? referralCode,
-  }) {
-    _isLoggedIn = true;
+  }) async {
+    if (!_isSupabaseInitialized) {
+      _isLoggedIn = true;
+      _currentUser = UserModel(
+        id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
+        fullName: fullName,
+        username: username,
+        email: email,
+        phone: phone,
+        referralCode: referralCode ?? 'TRADEX',
+        joinedAt: DateTime.now(),
+        kycStatus: KycStatus.notSubmitted,
+        tier: 'Standard Member',
+      );
+      notifyListeners();
+      return true;
+    }
+    final cleanEmail = email.trim();
+    final cleanPhone = phone.trim();
+    final response = await Supabase.instance.client.auth.signUp(
+      email: cleanEmail,
+      password: password,
+      data: {
+        'full_name': fullName.trim(),
+        'username': username.trim(),
+        'phone': cleanPhone,
+        if (referralCode != null && referralCode.trim().isNotEmpty)
+          'referral_code': referralCode.trim(),
+      },
+    );
+
+    if (response.user != null) {
+      _isLoggedIn = response.session != null;
+      if (response.session != null) {
+        ApiService().setAuthToken(response.session!.accessToken);
+      }
+      await syncUserProfile();
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> logout() async {
+    if (_isSupabaseInitialized) {
+      try {
+        await Supabase.instance.client.auth.signOut();
+      } catch (_) {}
+    }
+    _isLoggedIn = false;
+    ApiService().setAuthToken('');
     _currentUser = UserModel(
-      id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
-      fullName: fullName,
-      username: username,
-      email: email,
-      phone: phone,
-      referralCode: 'TRADEX${DateTime.now().millisecond}',
+      id: '',
+      fullName: 'Guest User',
+      username: 'guest',
+      email: '',
+      phone: '',
+      referralCode: '',
       joinedAt: DateTime.now(),
       kycStatus: KycStatus.notSubmitted,
+      tier: 'Standard Member',
       referralCount: 0,
       referralEarnings: 0.0,
-      tier: 'Standard Member',
+      isEmailVerified: false,
+      isPhoneVerified: false,
+      twoFactorEnabled: false,
+      biometricsEnabled: false,
     );
     _kyc = const KycModel(status: KycStatus.notSubmitted);
     notifyListeners();
-    return true;
   }
 
-  void logout() {
-    _isLoggedIn = false;
+  Future<void> sendPasswordReset(String email) async {
+    if (!_isSupabaseInitialized) return;
+    await Supabase.instance.client.auth.resetPasswordForEmail(email.trim());
+  }
+
+  Future<bool> verifyOtp({
+    required String email,
+    required String token,
+    OtpType type = OtpType.recovery,
+  }) async {
+    if (!_isSupabaseInitialized) {
+      _isLoggedIn = true;
+      notifyListeners();
+      return true;
+    }
+    final clean = email.trim();
+    final isEmail = clean.contains('@');
+    final AuthResponse response;
+    if (isEmail) {
+      response = await Supabase.instance.client.auth.verifyOTP(
+        email: clean,
+        token: token.trim(),
+        type: type,
+      );
+    } else {
+      final phone = clean.startsWith('+')
+          ? clean
+          : (clean.startsWith('880')
+              ? '+$clean'
+              : '+880${clean.replaceFirst(RegExp(r'^0+'), '')}');
+      response = await Supabase.instance.client.auth.verifyOTP(
+        phone: phone,
+        token: token.trim(),
+        type: OtpType.sms,
+      );
+    }
+
+    if (response.user != null) {
+      _isLoggedIn = response.session != null;
+      if (response.session != null) {
+        ApiService().setAuthToken(response.session!.accessToken);
+      }
+      await syncUserProfile();
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> syncUserProfile() async {
+    if (!_isSupabaseInitialized) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final profileData = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      final walletData = await Supabase.instance.client
+          .from('wallets')
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (profileData != null) {
+        final kycStr =
+            (profileData['kyc_status'] as String?)?.toUpperCase() ??
+                'NOT_SUBMITTED';
+        KycStatus kycStatus = KycStatus.notSubmitted;
+        if (kycStr == 'VERIFIED') {
+          kycStatus = KycStatus.verified;
+        } else if (kycStr == 'PENDING') {
+          kycStatus = KycStatus.pending;
+        } else if (kycStr == 'REJECTED') {
+          kycStatus = KycStatus.rejected;
+        }
+
+        _kyc = KycModel(
+          status: kycStatus,
+          fullName: profileData['full_name'] as String? ?? '',
+        );
+
+        _currentUser = UserModel(
+          id: user.id,
+          fullName: (profileData['full_name'] as String?) ??
+              (user.userMetadata?['full_name'] as String?) ??
+              '',
+          username: (profileData['username'] as String?) ??
+              (user.userMetadata?['username'] as String?) ??
+              '',
+          email: (profileData['email'] as String?) ?? user.email ?? '',
+          phone: (profileData['phone'] as String?) ??
+              user.phone ??
+              (user.userMetadata?['phone'] as String?) ??
+              '',
+          avatarUrl: (profileData['avatar_url'] as String?) ?? '',
+          country: (profileData['country'] as String?) ?? 'Bangladesh',
+          referralCode: (profileData['referral_code'] as String?) ??
+              (user.userMetadata?['referral_code'] as String?) ??
+              'TRADEX',
+          referralCount: (profileData['referral_count'] as num?)?.toInt() ?? 0,
+          referralEarnings:
+              ((profileData['referral_earnings'] as num?)?.toDouble()) ?? 0.0,
+          kycStatus: kycStatus,
+          tier: (profileData['tier'] as String?) ?? 'Standard Member',
+          joinedAt: profileData['created_at'] != null
+              ? DateTime.tryParse(profileData['created_at'] as String) ??
+                  DateTime.now()
+              : DateTime.now(),
+          isEmailVerified: user.emailConfirmedAt != null,
+          isPhoneVerified: user.phoneConfirmedAt != null,
+          twoFactorEnabled: _currentUser.twoFactorEnabled,
+          biometricsEnabled: _currentUser.biometricsEnabled,
+        );
+      } else {
+        _currentUser = UserModel(
+          id: user.id,
+          fullName: (user.userMetadata?['full_name'] as String?) ?? '',
+          username: (user.userMetadata?['username'] as String?) ?? '',
+          email: user.email ?? '',
+          phone: user.phone ??
+              (user.userMetadata?['phone'] as String?) ??
+              '',
+          referralCode:
+              (user.userMetadata?['referral_code'] as String?) ?? 'TRADEX',
+          joinedAt: DateTime.now(),
+          kycStatus: KycStatus.notSubmitted,
+          tier: 'Standard Member',
+        );
+      }
+
+      if (walletData != null) {
+        final availMinor =
+            (walletData['available_balance_minor'] as num?)?.toDouble() ?? 0.0;
+        _walletBalance = availMinor / 100.0;
+      }
+    } catch (_) {
+      _currentUser = UserModel(
+        id: user.id,
+        fullName: (user.userMetadata?['full_name'] as String?) ?? '',
+        username: (user.userMetadata?['username'] as String?) ?? '',
+        email: user.email ?? '',
+        phone: user.phone ??
+            (user.userMetadata?['phone'] as String?) ??
+            '',
+        referralCode:
+            (user.userMetadata?['referral_code'] as String?) ?? 'TRADEX',
+        joinedAt: DateTime.now(),
+        kycStatus: KycStatus.notSubmitted,
+        tier: 'Standard Member',
+      );
+    }
     notifyListeners();
   }
 

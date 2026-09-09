@@ -17,7 +17,6 @@ import {
   IconArrowUpRight,
   IconReceipt2,
   IconScale,
-  IconWallet,
 } from "@tabler/icons-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";

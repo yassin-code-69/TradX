@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
       "@mantine/core",
       "@mantine/hooks",
       "@mantine/dates",
-      "@mantine/notifications",
       "@mantine/modals",
       "@tabler/icons-react",
     ],

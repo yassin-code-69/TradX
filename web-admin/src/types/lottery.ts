@@ -129,7 +129,7 @@ export interface WinnerItem {
 
 export interface PaymentMethodItem {
   id: string;
-  code: "BKASH" | "NAGAD" | "ROCKET" | "BANK";
+  code: "BKASH" | "NAGAD" | "ROCKET" | "BANK" | string;
   name: string;
   type: "MOBILE_BANKING" | "BANK_TRANSFER";
   accountNumber: string;

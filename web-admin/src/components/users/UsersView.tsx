@@ -21,7 +21,6 @@ import {
   Title,
   Tooltip,
   UnstyledButton,
-  useComputedColorScheme,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -96,10 +95,6 @@ export function UsersView({ filter, initialStatus }: UsersViewProps = {}) {
   const pathname = usePathname();
   const users = useAdminStore((s) => s.users);
   const toggleUserStatus = useAdminStore((s) => s.toggleUserStatus);
-  const computedColorScheme = useComputedColorScheme("dark", {
-    getInitialValueInEffect: true,
-  });
-  const isDark = computedColorScheme === "dark";
 
   const effectiveInitialStatus = useMemo(() => {
     if (filter) return filter;

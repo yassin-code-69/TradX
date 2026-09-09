@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tradex/screens/auth/login_screen.dart';
 import 'package:tradex/screens/main_shell_screen.dart';
-import 'package:tradex/screens/onboarding_screen.dart';
-import 'package:tradex/state/app_state.dart';
 import 'package:tradex/theme/app_colors.dart';
 import 'package:tradex/widgets/custom_crown.dart';
 
@@ -62,16 +62,20 @@ class _SplashScreenState extends State<SplashScreen>
   void _checkSessionAndNavigate() {
     if (!mounted) return;
 
-    final appState = AppState();
-    final bool isLoggedIn = appState.isLoggedIn;
+    Session? session;
+    try {
+      session = Supabase.instance.client.auth.currentSession;
+    } catch (_) {
+      session = null;
+    }
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 600),
         pageBuilder: (context, animation, secondaryAnimation) {
-          return isLoggedIn
+          return session != null
               ? const MainShellScreen()
-              : const OnboardingScreen();
+              : const LoginScreen();
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(

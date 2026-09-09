@@ -64,6 +64,9 @@ function ProgressBarInner() {
 
   // Complete progress on route change
   useEffect(() => {
+    // Trigger on route or search params update
+    void pathname;
+    void searchParams;
     complete();
   }, [pathname, searchParams, complete]);
 
@@ -82,8 +85,7 @@ function ProgressBarInner() {
 
       const href = target.getAttribute("href");
       if (
-        href &&
-        href.startsWith("/") &&
+        href?.startsWith("/") &&
         !href.startsWith("#") &&
         !target.hasAttribute("download") &&
         target.getAttribute("target") !== "_blank"

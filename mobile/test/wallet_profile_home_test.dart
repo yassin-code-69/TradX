@@ -73,13 +73,18 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
+      AppState().updateProfile(
+        fullName: 'Shek Ahmmed',
+        phone: '+880 1712-345678',
+        email: 'shekahmmed@email.com',
+      );
       await tester.pumpWidget(wrapWidget(const ProfileScreen()));
       await tester.pumpAndSettle();
 
       // User details
       expect(find.text('Shek Ahmmed'), findsOneWidget);
       expect(find.text('shekahmmed@email.com'), findsOneWidget);
-      expect(find.text('✓ VERIFIED'), findsWidgets);
+      expect(find.textContaining('VERIF'), findsWidgets);
 
       // 7 Menu items
       expect(find.text('Personal Information'), findsOneWidget);

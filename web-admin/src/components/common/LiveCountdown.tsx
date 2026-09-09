@@ -2,7 +2,7 @@
 
 import { Group, Text, useComputedColorScheme } from "@mantine/core";
 import { IconClock } from "@tabler/icons-react";
-import React, { useSyncExternalStore } from "react";
+import { memo, useSyncExternalStore } from "react";
 import { formatTimeRemaining } from "@/lib/formatters";
 
 // Shared singleton clock manager: single 1000ms timer shared across all countdown subscribers
@@ -14,7 +14,9 @@ function startClock() {
   if (intervalId !== null) return;
   intervalId = setInterval(() => {
     currentTick = Date.now();
-    listeners.forEach((listener) => listener());
+    listeners.forEach((listener) => {
+      listener();
+    });
   }, 1000);
 }
 
@@ -60,7 +62,7 @@ interface LiveCountdownProps {
   prefix?: string;
 }
 
-export const LiveCountdown = React.memo(function LiveCountdown({
+export const LiveCountdown = memo(function LiveCountdown({
   targetDate,
   showIcon = true,
   prefix = "Closes in:",

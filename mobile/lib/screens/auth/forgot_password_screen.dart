@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tradex/screens/auth/otp_verification_screen.dart';
+import 'package:tradex/state/app_state.dart';
 import 'package:tradex/theme/app_colors.dart';
 import 'package:tradex/widgets/tradex_widgets.dart';
 
@@ -14,9 +16,8 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _inputController =
-      TextEditingController(text: '01712345678');
-  bool _isPhoneMode = true;
+  final TextEditingController _inputController = TextEditingController();
+  bool _isPhoneMode = false;
   bool _isLoading = false;
 
   @override
@@ -36,28 +37,84 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
     HapticFeedback.lightImpact();
 
-    await Future.delayed(const Duration(milliseconds: 900));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
     final target = _inputController.text.trim();
     final formattedTarget = _isPhoneMode
         ? (target.startsWith('+880') ? target : '+880 $target')
         : target;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OtpVerificationScreen(
-          target: formattedTarget,
-          isPhone: _isPhoneMode,
+    try {
+      final appState = AppState();
+      await appState.sendPasswordReset(target);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.cardBgElevated,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: AppColors.goldPrimary, width: 1),
+          ),
+          content: Row(
+            children: [
+              const Icon(Icons.mark_email_read_rounded,
+                  color: AppColors.goldPrimary, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Password reset instructions sent successfully!',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(
+            target: formattedTarget,
+            isPhone: _isPhoneMode,
+          ),
+        ),
+      );
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            e.message,
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.redBg,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Failed to send reset code: $e',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -130,7 +187,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Select your preferred recovery channel. We will send a 6-digit OTP code to verify your identity.',
+                  'Enter your registered email address or mobile number. We will send a verification code to reset your password.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 13,
@@ -152,26 +209,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     children: [
                       Expanded(
                         child: _buildChannelTab(
-                          label: 'Mobile (+880)',
-                          icon: Icons.phone_android_rounded,
-                          isSelected: _isPhoneMode,
-                          onTap: () {
-                            setState(() {
-                              _isPhoneMode = true;
-                              _inputController.text = '01712345678';
-                            });
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildChannelTab(
                           label: 'Email Address',
                           icon: Icons.email_outlined,
                           isSelected: !_isPhoneMode,
                           onTap: () {
                             setState(() {
                               _isPhoneMode = false;
-                              _inputController.text = 'shekahmmed@email.com';
+                              _inputController.clear();
+                            });
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildChannelTab(
+                          label: 'Mobile (+880)',
+                          icon: Icons.phone_android_rounded,
+                          isSelected: _isPhoneMode,
+                          onTap: () {
+                            setState(() {
+                              _isPhoneMode = true;
+                              _inputController.clear();
                             });
                           },
                         ),
