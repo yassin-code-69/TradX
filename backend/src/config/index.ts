@@ -12,9 +12,9 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('*'),
 
   // Supabase
-  SUPABASE_URL: z.string().default('https://mqrtqldebapvllidkcgs.supabase.co'),
-  SUPABASE_ANON_KEY: z.string().default('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xcnRxbGRlYmFwdmxsaWRrY2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTM0MzIsImV4cCI6MjEwMzE2OTQzMn0.IbAeuC_rdcAjgdL5-0WlfuBEPKzK6bRmP4peh9JMp8A'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().default('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xcnRxbGRlYmFwdmxsaWRrY2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTM0MzIsImV4cCI6MjEwMzE2OTQzMn0.IbAeuC_rdcAjgdL5-0WlfuBEPKzK6bRmP4peh9JMp8A'),
+  SUPABASE_URL: z.string().default('https://ltvepcqafhxuwodimybr.supabase.co'),
+  SUPABASE_ANON_KEY: z.string().default('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dmVwY3FhZmh4dXdvZGlteWJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5Mjk4MDMsImV4cCI6MjEwMzUwNTgwM30.Ch3LMdQaaJlh_eFTd5yXjVbmT_4gMEgWmuH1qWhc6yU'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().default('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dmVwY3FhZmh4dXdvZGlteWJyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzkyOTgwMywiZXhwIjoyMTAzNTA1ODAzfQ.1UJU2wD4SITFe325WVpcGvEIA9ZND_k3mk4AwT9LlmU'),
   SUPABASE_JWT_SECRET: z.string().default('tradex-super-secret-jwt-key-for-development-change-in-prod'),
 
   // PostgreSQL Database
