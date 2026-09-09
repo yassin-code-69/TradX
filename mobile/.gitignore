@@ -33,6 +33,13 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Application packages & binaries
+*.apk
+*.aab
+*.ap_
+*.ipa
+*.app
+
 # Symbolication related
 app.*.symbols
 

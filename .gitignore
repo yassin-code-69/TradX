@@ -1,0 +1,97 @@
+# ==========================================
+# Compiled Binaries & Mobile Builds (APKs, AABs, IPAs)
+# ==========================================
+*.apk
+*.aab
+*.ap_
+*.dex
+*.ipa
+*.xcarchive
+*.app
+*.dill
+*.pdb
+*.so
+*.dylib
+*.dll
+*.exe
+
+# ==========================================
+# Flutter / Dart Build & Generated Files
+# ==========================================
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+**/build/
+**/coverage/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.widget_preview/
+app.*.symbols
+app.*.map.json
+
+# Ephemeral & Generated platform files
+**/flutter/ephemeral/
+**/Flutter/ephemeral/
+**/GeneratedPluginRegistrant.*
+**/Generated.xcconfig
+**/flutter_export_environment.sh
+**/flutter_native_integration.env
+
+# Android build & local properties
+.gradle/
+**/.gradle/
+.kotlin/
+**/.kotlin/
+local.properties
+**/local.properties
+**/captures/
+**/.cxx/
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/*.keystore
+**/*.jks
+key.properties
+
+# ==========================================
+# Node.js / Next.js / Web-Admin
+# ==========================================
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+**/out/
+.vercel
+**/.vercel
+.pnp
+.pnp.*
+*.tsbuildinfo
+next-env.d.ts
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+.env.local
+.env.*.local
+*.pem
+
+# ==========================================
+# OS & Editor files
+# ==========================================
+.DS_Store
+Thumbs.db
+*.class
+*.log
+*.pyc
+*.swp
+.idea/
+*.iml
+*.ipr
+*.iws
+.history/
+.vscode/
